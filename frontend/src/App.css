@@ -1,0 +1,158 @@
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.cabecalho {
+  margin-bottom: 24px;
+}
+
+.cabecalho h1 {
+  font-size: 22px;
+  margin: 0 0 12px;
+}
+
+.abas {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.abas button {
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  font-size: 15px;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+}
+
+.abas button.aba-ativa {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.pagina h2 {
+  margin-top: 0;
+}
+
+.formulario {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.campo label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.campo input,
+.campo select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.formulario > button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 10px 20px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.formulario > button:hover {
+  background: var(--accent-hover);
+}
+
+.formulario > button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.erro {
+  background: var(--danger-bg);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tabela th,
+.tabela td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.tabela th {
+  background: #f0f0f3;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.tabela tr:last-child td {
+  border-bottom: none;
+}
+
+.linha-alerta {
+  background: #fff6e5;
+}
+
+.badge-alerta {
+  color: #b8860b;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.botao-secundario {
+  padding: 6px 12px;
+  background: none;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.botao-secundario:hover {
+  background: var(--danger-bg);
+}
+
+.resultado {
+  margin-top: 20px;
+}
+
+.linha-total td {
+  font-weight: 700;
+  font-size: 16px;
+  border-top: 2px solid var(--border);
+}

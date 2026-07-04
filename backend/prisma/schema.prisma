@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id         String      @id @default(uuid())
+  email      String      @unique
+  senhaHash  String
+  nome       String
+  criadoEm   DateTime    @default(now())
+
+  clientes   Cliente[]
+  filamentos Filamento[]
+  orcamentos Orcamento[]
+  vendas     Venda[]
+
+  @@map("usuarios")
+}
+
+model Cliente {
+  id         String      @id @default(uuid())
+  usuarioId  String
+  usuario    Usuario     @relation(fields: [usuarioId], references: [id])
+  nome       String
+  whatsapp   String?
+  criadoEm   DateTime    @default(now())
+
+  orcamentos Orcamento[]
+
+  @@map("clientes")
+}
+
+model Filamento {
+  id             String             @id @default(uuid())
+  usuarioId      String
+  usuario        Usuario            @relation(fields: [usuarioId], references: [id])
+  tipo           String
+  cor            String
+  precoPago      Decimal            @db.Decimal(10, 2)
+  pesoTotalG     Decimal            @db.Decimal(10, 2)
+  pesoAtualG     Decimal            @db.Decimal(10, 2)
+  estoqueMinimoG Decimal            @db.Decimal(10, 2)
+  criadoEm       DateTime           @default(now())
+
+  orcamentos     Orcamento[]
+  movimentos     MovimentoEstoque[]
+
+  @@map("filamentos")
+}
+
+enum StatusOrcamento {
+  PENDENTE
+  ACEITO
+  RECUSADO
+}
+
+model Orcamento {
+  id             String               @id @default(uuid())
+  usuarioId      String
+  usuario        Usuario              @relation(fields: [usuarioId], references: [id])
+  clienteId      String
+  cliente        Cliente              @relation(fields: [clienteId], references: [id])
+  filamentoId    String
+  filamento      Filamento            @relation(fields: [filamentoId], references: [id])
+  pesoUsadoG     Decimal              @db.Decimal(10, 2)
+  horasImpressao Decimal              @db.Decimal(10, 2)
+  valorCalculado Decimal              @db.Decimal(10, 2)
+  valorAtual     Decimal              @db.Decimal(10, 2)
+  status         StatusOrcamento      @default(PENDENTE)
+  criadoEm       DateTime             @default(now())
+
+  historico      OrcamentoHistorico[]
+  venda          Venda?
+
+  @@map("orcamentos")
+}
+
+model OrcamentoHistorico {
+  id           String    @id @default(uuid())
+  orcamentoId  String
+  orcamento    Orcamento @relation(fields: [orcamentoId], references: [id])
+  valor        Decimal   @db.Decimal(10, 2)
+  registradoEm DateTime  @default(now())
+
+  @@map("orcamento_historico")
+}
+
+model Venda {
+  id          String             @id @default(uuid())
+  usuarioId   String
+  usuario     Usuario            @relation(fields: [usuarioId], references: [id])
+  orcamentoId String             @unique
+  orcamento   Orcamento          @relation(fields: [orcamentoId], references: [id])
+  valorFinal  Decimal            @db.Decimal(10, 2)
+  dataVenda   DateTime           @default(now())
+
+  movimentos  MovimentoEstoque[]
+
+  @@map("vendas")
+}
+
+enum TipoMovimento {
+  ENTRADA
+  SAIDA
+}
+
+model MovimentoEstoque {
+  id          String        @id @default(uuid())
+  filamentoId String
+  filamento   Filamento     @relation(fields: [filamentoId], references: [id])
+  vendaId     String?
+  venda       Venda?        @relation(fields: [vendaId], references: [id])
+  quantidadeG Decimal       @db.Decimal(10, 2)
+  tipo        TipoMovimento
+  data        DateTime      @default(now())
+
+  @@map("movimento_estoque")
+}
