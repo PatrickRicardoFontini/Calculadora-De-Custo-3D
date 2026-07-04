@@ -11,6 +11,7 @@ import type {
   OrcamentoComEstoque,
   ReceitaMensal,
   StatusOrcamento,
+  VendaDoMes,
 } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
@@ -125,5 +126,10 @@ export async function listarMovimentos(filamentoId: string): Promise<MovimentoEs
 
 export async function listarReceitaMensal(): Promise<ReceitaMensal[]> {
   const resposta = await fetch(`${API_URL}/receita/mensal`);
+  return tratarResposta(resposta);
+}
+
+export async function listarVendasDoMes(mes: string): Promise<VendaDoMes[]> {
+  const resposta = await fetch(`${API_URL}/receita/vendas?mes=${mes}`);
   return tratarResposta(resposta);
 }

@@ -41,3 +41,47 @@ receitaRouter.get("/mensal", async (req, res) => {
 
   res.json(resultado);
 });
+
+// GET /receita/vendas?mes=2026-07 - lista as vendas de um mês específico com dados do pedido
+receitaRouter.get("/vendas", async (req, res) => {
+  const { mes } = req.query;
+
+  if (typeof mes !== "string" || !/^\d{4}-\d{2}$/.test(mes)) {
+    return res.status(400).json({ erro: "Parâmetro 'mes' inválido. Use o formato YYYY-MM" });
+  }
+
+  const [ano, mesNum] = mes.split("-").map(Number);
+  if (mesNum < 1 || mesNum > 12) {
+    return res.status(400).json({ erro: "Parâmetro 'mes' inválido. Use o formato YYYY-MM" });
+  }
+
+  const inicio = new Date(Date.UTC(ano, mesNum - 1, 1));
+  const fim = new Date(Date.UTC(ano, mesNum, 1));
+
+  const vendas = await prisma.venda.findMany({
+    where: {
+      usuarioId: req.usuarioId,
+      dataVenda: { gte: inicio, lt: fim },
+    },
+    include: {
+      orcamento: {
+        include: { cliente: true, filamento: true },
+      },
+    },
+    orderBy: { dataVenda: "desc" },
+  });
+
+  const resultado = vendas.map((venda) => ({
+    id: venda.id,
+    dataVenda: venda.dataVenda,
+    clienteNome: venda.orcamento.cliente.nome,
+    filamentoTipo: venda.orcamento.filamento.tipo,
+    filamentoCor: venda.orcamento.filamento.cor,
+    pesoUsadoG: decimalToNumber(venda.orcamento.pesoUsadoG),
+    horasImpressao: decimalToNumber(venda.orcamento.horasImpressao),
+    valorFinal: decimalToNumber(venda.valorFinal),
+    valorCalculado: decimalToNumber(venda.orcamento.valorCalculado),
+  }));
+
+  res.json(resultado);
+});

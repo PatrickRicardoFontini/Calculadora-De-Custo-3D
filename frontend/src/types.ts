@@ -117,3 +117,15 @@ export interface ReceitaMensal {
   totalVendas: number;
   quantidadeVendas: number;
 }
+
+export interface VendaDoMes {
+  id: string;
+  dataVenda: string;
+  clienteNome: string;
+  filamentoTipo: string;
+  filamentoCor: string;
+  pesoUsadoG: number;
+  horasImpressao: number;
+  valorFinal: number;
+  valorCalculado: number;
+}

@@ -452,3 +452,12 @@ button.botao-whatsapp:disabled {
   font-weight: 700;
   color: var(--text);
 }
+
+.titulo-historico {
+  margin-top: 28px;
+}
+
+.campo-seletor-mes {
+  max-width: 220px;
+  margin-bottom: 16px;
+}
