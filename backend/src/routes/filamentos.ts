@@ -182,8 +182,22 @@ filamentosRouter.delete("/:id", async (req, res) => {
     return res.status(404).json({ erro: "Filamento não encontrado" });
   }
 
+  const orcamentosVinculados = await prisma.orcamento.count({
+    where: { filamentoId: existente.id },
+  });
+  if (orcamentosVinculados > 0) {
+    return res.status(400).json({
+      erro: "Não é possível excluir um filamento que já tem orçamentos vinculados.",
+    });
+  }
+
   try {
-    await prisma.filamento.delete({ where: { id: existente.id } });
+    await prisma.$transaction([
+      // Sem orçamentos vinculados, qualquer movimento existente é só histórico de
+      // reabastecimento (entrada), seguro pra remover junto com o filamento
+      prisma.movimentoEstoque.deleteMany({ where: { filamentoId: existente.id } }),
+      prisma.filamento.delete({ where: { id: existente.id } }),
+    ]);
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
       return res.status(400).json({
