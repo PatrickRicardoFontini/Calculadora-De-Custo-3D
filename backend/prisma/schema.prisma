@@ -42,7 +42,6 @@ model Filamento {
   tipo           String
   cor            String
   marca          String?
-  precoPago      Decimal            @db.Decimal(10, 2)
   pesoTotalG     Decimal            @db.Decimal(10, 2)
   pesoAtualG     Decimal            @db.Decimal(10, 2)
   estoqueMinimoG Decimal            @db.Decimal(10, 2)
@@ -118,7 +117,7 @@ model MovimentoEstoque {
   vendaId     String?
   venda       Venda?        @relation(fields: [vendaId], references: [id])
   quantidadeG Decimal       @db.Decimal(10, 2)
-  precoPago   Decimal?      @db.Decimal(10, 2)
+  precoPorKg  Decimal?      @db.Decimal(10, 2)
   tipo        TipoMovimento
   data        DateTime      @default(now())
 

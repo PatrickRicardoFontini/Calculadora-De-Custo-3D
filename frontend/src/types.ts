@@ -3,7 +3,6 @@ export interface Filamento {
   tipo: string;
   cor: string;
   marca: string | null;
-  precoPago: string;
   pesoTotalG: string;
   pesoAtualG: string;
   estoqueMinimoG: string;
@@ -15,7 +14,7 @@ export interface NovoFilamento {
   tipo: string;
   cor: string;
   marca?: string;
-  precoPago: number;
+  precoPorKg: number;
   pesoTotalG: number;
   estoqueMinimoG: number;
 }
@@ -111,7 +110,7 @@ export interface MovimentoEstoque {
   filamentoId: string;
   vendaId: string | null;
   quantidadeG: string;
-  precoPago: string | null;
+  precoPorKg: string | null;
   tipo: TipoMovimento;
   data: string;
 }

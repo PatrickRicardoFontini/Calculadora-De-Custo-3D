@@ -110,11 +110,11 @@ export async function atualizarStatusOrcamento(
   return tratarResposta(resposta);
 }
 
-export async function reabastecerFilamento(id: string, quantidadeG: number, precoPago: number): Promise<Filamento> {
+export async function reabastecerFilamento(id: string, quantidadeG: number, precoPorKg: number): Promise<Filamento> {
   const resposta = await fetch(`${API_URL}/filamentos/${id}/reabastecer`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ quantidadeG, precoPago }),
+    body: JSON.stringify({ quantidadeG, precoPorKg }),
   });
   return tratarResposta(resposta);
 }

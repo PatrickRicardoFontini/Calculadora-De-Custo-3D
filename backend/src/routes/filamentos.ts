@@ -6,7 +6,7 @@ export const filamentosRouter = Router();
 
 function validarCamposFilamento(body: any, { parcial }: { parcial: boolean }) {
   const erros: string[] = [];
-  const campos = ["tipo", "cor", "precoPago", "pesoTotalG", "estoqueMinimoG"];
+  const campos = ["tipo", "cor", "precoPorKg", "pesoTotalG", "estoqueMinimoG"];
 
   for (const campo of campos) {
     if (!parcial && (body[campo] === undefined || body[campo] === null || body[campo] === "")) {
@@ -14,7 +14,7 @@ function validarCamposFilamento(body: any, { parcial }: { parcial: boolean }) {
     }
   }
 
-  for (const campoNumerico of ["precoPago", "pesoTotalG", "estoqueMinimoG", "pesoAtualG"]) {
+  for (const campoNumerico of ["precoPorKg", "pesoTotalG", "estoqueMinimoG", "pesoAtualG"]) {
     if (body[campoNumerico] !== undefined && Number.isNaN(Number(body[campoNumerico]))) {
       erros.push(`Campo numérico inválido: ${campoNumerico}`);
     }
@@ -53,8 +53,8 @@ filamentosRouter.post("/", async (req, res) => {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
   }
 
-  const { tipo, cor, marca, precoPago, pesoTotalG, estoqueMinimoG } = req.body;
-  const precoPagoNum = Number(precoPago);
+  const { tipo, cor, marca, precoPorKg, pesoTotalG, estoqueMinimoG } = req.body;
+  const precoPorKgNum = Number(precoPorKg);
   const pesoTotalGNum = Number(pesoTotalG);
 
   const filamento = await prisma.filamento.create({
@@ -63,11 +63,10 @@ filamentosRouter.post("/", async (req, res) => {
       tipo,
       cor,
       marca: marca || null,
-      precoPago: precoPagoNum,
       pesoTotalG: pesoTotalGNum,
       pesoAtualG: pesoTotalGNum,
       estoqueMinimoG: Number(estoqueMinimoG),
-      precoPorGrama: precoPagoNum / pesoTotalGNum,
+      precoPorGrama: precoPorKgNum / 1000,
     },
   });
 
@@ -89,7 +88,7 @@ filamentosRouter.put("/:id", async (req, res) => {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
   }
 
-  const { tipo, cor, marca, precoPago, pesoTotalG, pesoAtualG, estoqueMinimoG } = req.body;
+  const { tipo, cor, marca, precoPorKg, pesoTotalG, pesoAtualG, estoqueMinimoG } = req.body;
 
   const filamento = await prisma.filamento.update({
     where: { id: existente.id },
@@ -97,7 +96,7 @@ filamentosRouter.put("/:id", async (req, res) => {
       ...(tipo !== undefined && { tipo }),
       ...(cor !== undefined && { cor }),
       ...(marca !== undefined && { marca: marca || null }),
-      ...(precoPago !== undefined && { precoPago: Number(precoPago) }),
+      ...(precoPorKg !== undefined && { precoPorGrama: Number(precoPorKg) / 1000 }),
       ...(pesoTotalG !== undefined && { pesoTotalG: Number(pesoTotalG) }),
       ...(pesoAtualG !== undefined && { pesoAtualG: Number(pesoAtualG) }),
       ...(estoqueMinimoG !== undefined && { estoqueMinimoG: Number(estoqueMinimoG) }),
@@ -109,14 +108,14 @@ filamentosRouter.put("/:id", async (req, res) => {
 
 // POST /filamentos/:id/reabastecer - registra entrada de estoque (compra de material novo)
 filamentosRouter.post("/:id/reabastecer", async (req, res) => {
-  const { quantidadeG, precoPago } = req.body;
+  const { quantidadeG, precoPorKg } = req.body;
 
   const erros: string[] = [];
   if (quantidadeG === undefined || quantidadeG === null || quantidadeG === "" || Number.isNaN(Number(quantidadeG)) || Number(quantidadeG) <= 0) {
     erros.push("Campo 'quantidadeG' inválido");
   }
-  if (precoPago === undefined || precoPago === null || precoPago === "" || Number.isNaN(Number(precoPago)) || Number(precoPago) <= 0) {
-    erros.push("Campo 'precoPago' inválido");
+  if (precoPorKg === undefined || precoPorKg === null || precoPorKg === "" || Number.isNaN(Number(precoPorKg)) || Number(precoPorKg) <= 0) {
+    erros.push("Campo 'precoPorKg' inválido");
   }
   if (erros.length > 0) {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
@@ -130,15 +129,15 @@ filamentosRouter.post("/:id/reabastecer", async (req, res) => {
   }
 
   const quantidade = Number(quantidadeG);
-  const precoPagoNum = Number(precoPago);
-  const precoPorGramaNovo = precoPagoNum / quantidade;
+  const precoPorKgNum = Number(precoPorKg);
+  const precoPorGramaNovo = precoPorKgNum / 1000;
 
   const filamentoAtualizado = await prisma.$transaction(async (tx) => {
     await tx.movimentoEstoque.create({
       data: {
         filamentoId: filamento.id,
         quantidadeG: quantidade,
-        precoPago: precoPagoNum,
+        precoPorKg: precoPorKgNum,
         tipo: "ENTRADA",
       },
     });

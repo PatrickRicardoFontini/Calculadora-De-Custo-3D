@@ -13,8 +13,8 @@ const valoresIniciais = {
   tipo: "",
   cor: "",
   marca: "",
-  precoPago: "",
-  pesoTotalG: "",
+  precoPorKg: "",
+  pesoTotalKg: "",
   estoqueMinimoG: "",
 };
 
@@ -74,8 +74,8 @@ export function Estoque() {
         tipo: form.tipo,
         cor: form.cor,
         marca: form.marca || undefined,
-        precoPago: Number(form.precoPago),
-        pesoTotalG: Number(form.pesoTotalG),
+        precoPorKg: Number(form.precoPorKg),
+        pesoTotalG: Number(form.pesoTotalKg) * 1000,
         estoqueMinimoG: Number(form.estoqueMinimoG),
       });
       setForm(valoresIniciais);
@@ -105,20 +105,20 @@ export function Estoque() {
   }
 
   async function confirmarReabastecimento(filamentoId: string) {
-    const quantidade = Number(quantidadeReabastecer);
+    const quantidadeKg = Number(quantidadeReabastecer);
     const preco = Number(precoReabastecer);
-    if (Number.isNaN(quantidade) || quantidade <= 0) {
+    if (Number.isNaN(quantidadeKg) || quantidadeKg <= 0) {
       setErro("Quantidade inválida");
       return;
     }
     if (Number.isNaN(preco) || preco <= 0) {
-      setErro("Preço pago inválido");
+      setErro("Preço por kg inválido");
       return;
     }
     setProcessando(true);
     setErro(null);
     try {
-      await reabastecerFilamento(filamentoId, quantidade, preco);
+      await reabastecerFilamento(filamentoId, quantidadeKg * 1000, preco);
       setPainel(null);
       await carregar();
       if (movimentosPorFilamento[filamentoId]) {
@@ -209,27 +209,27 @@ export function Estoque() {
           )}
         </div>
         <div className="campo">
-          <label htmlFor="precoPago">Preço pago (R$)</label>
+          <label htmlFor="precoPorKg">Preço por kg (R$)</label>
           <input
-            id="precoPago"
+            id="precoPorKg"
             required
             type="number"
             min="0"
             step="0.01"
-            value={form.precoPago}
-            onChange={(e) => atualizarCampo("precoPago", e.target.value)}
+            value={form.precoPorKg}
+            onChange={(e) => atualizarCampo("precoPorKg", e.target.value)}
           />
         </div>
         <div className="campo">
-          <label htmlFor="pesoTotalG">Peso comprado agora (g)</label>
+          <label htmlFor="pesoTotalKg">Peso comprado agora (kg)</label>
           <input
-            id="pesoTotalG"
+            id="pesoTotalKg"
             required
             type="number"
             min="0"
-            step="1"
-            value={form.pesoTotalG}
-            onChange={(e) => atualizarCampo("pesoTotalG", e.target.value)}
+            step="0.001"
+            value={form.pesoTotalKg}
+            onChange={(e) => atualizarCampo("pesoTotalKg", e.target.value)}
           />
         </div>
         <div className="campo">
@@ -309,16 +309,16 @@ export function Estoque() {
                     <tr key={`${f.id}-reabastecer`}>
                       <td colSpan={8}>
                         <div className="painel-inline">
-                          <label htmlFor={`quantidade-${f.id}`}>Quantidade comprada (g)</label>
+                          <label htmlFor={`quantidade-${f.id}`}>Quantidade comprada (kg)</label>
                           <input
                             id={`quantidade-${f.id}`}
                             type="number"
                             min="0"
-                            step="1"
+                            step="0.001"
                             value={quantidadeReabastecer}
                             onChange={(e) => setQuantidadeReabastecer(e.target.value)}
                           />
-                          <label htmlFor={`preco-${f.id}`}>Preço pago nessa compra (R$)</label>
+                          <label htmlFor={`preco-${f.id}`}>Preço por kg nessa compra (R$)</label>
                           <input
                             id={`preco-${f.id}`}
                             type="number"
@@ -353,7 +353,7 @@ export function Estoque() {
                                     {m.tipo === "ENTRADA" ? "Entrada" : "Saída"}
                                   </span>{" "}
                                   {parseFloat(m.quantidadeG).toFixed(0)}g
-                                  {m.precoPago && ` (R$ ${parseFloat(m.precoPago).toFixed(2)})`} —{" "}
+                                  {m.precoPorKg && ` (R$ ${parseFloat(m.precoPorKg).toFixed(2)}/kg)`} —{" "}
                                   {new Date(m.data).toLocaleString("pt-BR")}
                                 </li>
                               ))}
