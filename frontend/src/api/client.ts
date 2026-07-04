@@ -10,13 +10,28 @@ import type {
   Orcamento,
   OrcamentoComEstoque,
   ReceitaMensal,
+  RespostaAuth,
   StatusOrcamento,
+  Usuario,
   VendaDoMes,
 } from "../types";
+import { limparToken, obterToken } from "../lib/auth";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
+function headersComAuth(extra?: Record<string, string>): HeadersInit {
+  const token = obterToken();
+  return {
+    ...(extra ?? {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 async function tratarResposta<T>(resposta: Response): Promise<T> {
+  if (resposta.status === 401) {
+    limparToken();
+    window.dispatchEvent(new Event("nao-autenticado"));
+  }
   if (!resposta.ok) {
     const corpo = await resposta.json().catch(() => ({}));
     throw new Error(corpo.erro || `Erro na requisição (${resposta.status})`);
@@ -27,43 +42,69 @@ async function tratarResposta<T>(resposta: Response): Promise<T> {
   return resposta.json();
 }
 
+export async function registrar(nome: string, email: string, senha: string): Promise<RespostaAuth> {
+  const resposta = await fetch(`${API_URL}/auth/registro`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nome, email, senha }),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function login(email: string, senha: string): Promise<RespostaAuth> {
+  const resposta = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, senha }),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function buscarUsuarioAtual(): Promise<Usuario> {
+  const resposta = await fetch(`${API_URL}/auth/me`, { headers: headersComAuth() });
+  return tratarResposta(resposta);
+}
+
 export async function listarFilamentos(): Promise<Filamento[]> {
-  const resposta = await fetch(`${API_URL}/filamentos`);
+  const resposta = await fetch(`${API_URL}/filamentos`, { headers: headersComAuth() });
   return tratarResposta(resposta);
 }
 
 export async function criarFilamento(dados: NovoFilamento): Promise<Filamento> {
   const resposta = await fetch(`${API_URL}/filamentos`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headersComAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify(dados),
   });
   return tratarResposta(resposta);
 }
 
 export async function excluirFilamento(id: string): Promise<void> {
-  const resposta = await fetch(`${API_URL}/filamentos/${id}`, { method: "DELETE" });
+  const resposta = await fetch(`${API_URL}/filamentos/${id}`, {
+    method: "DELETE",
+    headers: headersComAuth(),
+  });
   return tratarResposta(resposta);
 }
 
 export async function calcularOrcamento(dados: CalculoInput): Promise<CalculoResultado> {
   const resposta = await fetch(`${API_URL}/calculadora`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headersComAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify(dados),
   });
   return tratarResposta(resposta);
 }
 
 export async function listarClientes(): Promise<Cliente[]> {
-  const resposta = await fetch(`${API_URL}/clientes`);
+  const resposta = await fetch(`${API_URL}/clientes`, { headers: headersComAuth() });
   return tratarResposta(resposta);
 }
 
 export async function criarCliente(dados: NovoCliente): Promise<Cliente> {
   const resposta = await fetch(`${API_URL}/clientes`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headersComAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify(dados),
   });
   return tratarResposta(resposta);
@@ -71,19 +112,19 @@ export async function criarCliente(dados: NovoCliente): Promise<Cliente> {
 
 export async function listarOrcamentos(status?: StatusOrcamento): Promise<Orcamento[]> {
   const query = status ? `?status=${status}` : "";
-  const resposta = await fetch(`${API_URL}/orcamentos${query}`);
+  const resposta = await fetch(`${API_URL}/orcamentos${query}`, { headers: headersComAuth() });
   return tratarResposta(resposta);
 }
 
 export async function buscarOrcamento(id: string): Promise<Orcamento> {
-  const resposta = await fetch(`${API_URL}/orcamentos/${id}`);
+  const resposta = await fetch(`${API_URL}/orcamentos/${id}`, { headers: headersComAuth() });
   return tratarResposta(resposta);
 }
 
 export async function criarOrcamento(dados: NovoOrcamento): Promise<Orcamento> {
   const resposta = await fetch(`${API_URL}/orcamentos`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headersComAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify(dados),
   });
   return tratarResposta(resposta);
@@ -92,7 +133,7 @@ export async function criarOrcamento(dados: NovoOrcamento): Promise<Orcamento> {
 export async function atualizarValorOrcamento(id: string, valor: number): Promise<Orcamento> {
   const resposta = await fetch(`${API_URL}/orcamentos/${id}/valor`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: headersComAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify({ valor }),
   });
   return tratarResposta(resposta);
@@ -104,7 +145,7 @@ export async function atualizarStatusOrcamento(
 ): Promise<OrcamentoComEstoque> {
   const resposta = await fetch(`${API_URL}/orcamentos/${id}/status`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: headersComAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify({ status }),
   });
   return tratarResposta(resposta);
@@ -113,23 +154,23 @@ export async function atualizarStatusOrcamento(
 export async function reabastecerFilamento(id: string, quantidadeG: number, precoPorKg: number): Promise<Filamento> {
   const resposta = await fetch(`${API_URL}/filamentos/${id}/reabastecer`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headersComAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify({ quantidadeG, precoPorKg }),
   });
   return tratarResposta(resposta);
 }
 
 export async function listarMovimentos(filamentoId: string): Promise<MovimentoEstoque[]> {
-  const resposta = await fetch(`${API_URL}/filamentos/${filamentoId}/movimentos`);
+  const resposta = await fetch(`${API_URL}/filamentos/${filamentoId}/movimentos`, { headers: headersComAuth() });
   return tratarResposta(resposta);
 }
 
 export async function listarReceitaMensal(): Promise<ReceitaMensal[]> {
-  const resposta = await fetch(`${API_URL}/receita/mensal`);
+  const resposta = await fetch(`${API_URL}/receita/mensal`, { headers: headersComAuth() });
   return tratarResposta(resposta);
 }
 
 export async function listarVendasDoMes(mes: string): Promise<VendaDoMes[]> {
-  const resposta = await fetch(`${API_URL}/receita/vendas?mes=${mes}`);
+  const resposta = await fetch(`${API_URL}/receita/vendas?mes=${mes}`, { headers: headersComAuth() });
   return tratarResposta(resposta);
 }

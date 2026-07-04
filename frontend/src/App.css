@@ -13,6 +13,55 @@
   margin: 0 0 12px;
 }
 
+.cabecalho-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.cabecalho-topo h1 {
+  margin: 0;
+}
+
+.usuario-logado {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.tela-auth {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.cartao-auth {
+  width: 100%;
+  max-width: 380px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 32px;
+}
+
+.cartao-auth h2 {
+  margin-top: 0;
+  text-align: center;
+}
+
+.troca-auth {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 16px 0 0;
+}
+
 .abas {
   display: flex;
   gap: 8px;
@@ -47,6 +96,19 @@
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
+}
+
+.formulario-auth {
+  display: flex;
+  flex-direction: column;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.formulario-auth > button {
+  text-align: center;
 }
 
 .campo {

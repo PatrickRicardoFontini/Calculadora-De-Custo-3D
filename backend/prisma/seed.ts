@@ -16,7 +16,7 @@ async function main() {
   console.log("Usuário padrão pronto:");
   console.log(`  id: ${usuario.id}`);
   console.log(`  email: ${usuario.email}`);
-  console.log("\nCopie esse id para DEFAULT_USUARIO_ID no arquivo .env");
+  console.log("\nRegistre-se no app com esse mesmo email para assumir essa conta e ver os dados de teste já existentes.");
 }
 
 main()

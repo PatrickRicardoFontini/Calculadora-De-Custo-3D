@@ -1,3 +1,14 @@
+export interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+}
+
+export interface RespostaAuth {
+  token: string;
+  usuario: Usuario;
+}
+
 export interface Filamento {
   id: string;
   tipo: string;
