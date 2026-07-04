@@ -137,13 +137,26 @@
 .botao-secundario {
   padding: 6px 12px;
   background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.botao-secundario:hover {
+  background: #f0f0f3;
+}
+
+.botao-perigo {
+  padding: 6px 12px;
+  background: none;
   border: 1px solid var(--danger);
   color: var(--danger);
   border-radius: 6px;
   font-size: 13px;
 }
 
-.botao-secundario:hover {
+.botao-perigo:hover {
   background: var(--danger-bg);
 }
 
@@ -155,4 +168,190 @@
   font-weight: 700;
   font-size: 16px;
   border-top: 2px solid var(--border);
+}
+
+.sucesso {
+  background: #e6f7ec;
+  color: #1e7a3d;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.secao-salvar-orcamento {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.secao-salvar-orcamento h3 {
+  margin-top: 0;
+}
+
+.filtros-status {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filtros-status button {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.filtros-status button.filtro-ativo {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  font-weight: 600;
+}
+
+.lista-orcamentos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-orcamento {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+}
+
+.card-orcamento.status-pendente {
+  border-left-color: #d9a300;
+}
+
+.card-orcamento.status-aceito {
+  border-left-color: #1e7a3d;
+}
+
+.card-orcamento.status-recusado {
+  border-left-color: var(--danger);
+}
+
+.card-orcamento-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.detalhe-secundario {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.badge-status {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-pendente {
+  background: #fff6e5;
+  color: #b8860b;
+}
+
+.badge-aceito {
+  background: #e6f7ec;
+  color: #1e7a3d;
+}
+
+.badge-recusado {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.card-orcamento-corpo {
+  margin-top: 10px;
+}
+
+.valor-atual {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.acoes-orcamento {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.acoes-orcamento button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--accent);
+  color: white;
+}
+
+.acoes-orcamento button.botao-secundario {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.acoes-orcamento button.botao-perigo {
+  background: none;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+.botao-whatsapp {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #25d366;
+  color: white;
+  text-decoration: none;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.botao-whatsapp:disabled,
+button.botao-whatsapp:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.edicao-valor {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.edicao-valor input {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 120px;
+}
+
+.historico-valores {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+.historico-valores h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.historico-valores ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
 }

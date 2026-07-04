@@ -170,7 +170,7 @@ export function Estoque() {
                   </td>
                   <td>{parseFloat(f.estoqueMinimoG).toFixed(0)} g</td>
                   <td>
-                    <button className="botao-secundario" onClick={() => handleExcluir(f.id)}>
+                    <button className="botao-perigo" onClick={() => handleExcluir(f.id)}>
                       Excluir
                     </button>
                   </td>

@@ -1,40 +1,19 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
-import { decimalToNumber } from "../lib/decimal";
+import { calcularCusto, validarEntradaCalculo } from "../lib/calculo";
 
 export const calculadoraRouter = Router();
-
-function arredondar(valor: number, casas = 2): number {
-  const fator = 10 ** casas;
-  return Math.round((valor + Number.EPSILON) * fator) / fator;
-}
 
 // POST /calculadora - calcula o custo de um orçamento a partir de um filamento cadastrado
 calculadoraRouter.post("/", async (req, res) => {
   const { filamentoId, pesoUsadoG, horasImpressao, custoEnergiaHora, taxaDepreciacaoHora, margemPercentual } =
     req.body;
 
-  const camposObrigatorios = {
-    filamentoId,
-    pesoUsadoG,
-    horasImpressao,
-    custoEnergiaHora,
-    taxaDepreciacaoHora,
-    margemPercentual,
-  };
-
   const erros: string[] = [];
-  for (const [campo, valor] of Object.entries(camposObrigatorios)) {
-    if (valor === undefined || valor === null || valor === "") {
-      erros.push(`Campo obrigatório ausente: ${campo}`);
-    }
+  if (!filamentoId) {
+    erros.push("Campo obrigatório ausente: filamentoId");
   }
-  for (const campo of ["pesoUsadoG", "horasImpressao", "custoEnergiaHora", "taxaDepreciacaoHora", "margemPercentual"]) {
-    const valor = camposObrigatorios[campo as keyof typeof camposObrigatorios];
-    if (valor !== undefined && valor !== null && valor !== "" && Number.isNaN(Number(valor))) {
-      erros.push(`Campo numérico inválido: ${campo}`);
-    }
-  }
+  erros.push(...validarEntradaCalculo(req.body));
   if (erros.length > 0) {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
   }
@@ -47,21 +26,15 @@ calculadoraRouter.post("/", async (req, res) => {
     return res.status(404).json({ erro: "Filamento não encontrado" });
   }
 
-  const precoPago = decimalToNumber(filamento.precoPago);
-  const pesoTotalG = decimalToNumber(filamento.pesoTotalG);
+  const entrada = {
+    pesoUsadoG: Number(pesoUsadoG),
+    horasImpressao: Number(horasImpressao),
+    custoEnergiaHora: Number(custoEnergiaHora),
+    taxaDepreciacaoHora: Number(taxaDepreciacaoHora),
+    margemPercentual: Number(margemPercentual),
+  };
 
-  const pesoUsado = Number(pesoUsadoG);
-  const horas = Number(horasImpressao);
-  const energiaHora = Number(custoEnergiaHora);
-  const depreciacaoHora = Number(taxaDepreciacaoHora);
-  const margem = Number(margemPercentual);
-
-  const precoPorGrama = precoPago / pesoTotalG;
-  const custoFilamento = precoPorGrama * pesoUsado;
-  const custoEnergia = energiaHora * horas;
-  const custoDepreciacao = depreciacaoHora * horas;
-  const subtotal = custoFilamento + custoEnergia + custoDepreciacao;
-  const valorFinal = subtotal * (1 + margem / 100);
+  const detalhamento = calcularCusto(filamento, entrada);
 
   res.json({
     filamento: {
@@ -69,21 +42,7 @@ calculadoraRouter.post("/", async (req, res) => {
       tipo: filamento.tipo,
       cor: filamento.cor,
     },
-    entrada: {
-      pesoUsadoG: pesoUsado,
-      horasImpressao: horas,
-      custoEnergiaHora: energiaHora,
-      taxaDepreciacaoHora: depreciacaoHora,
-      margemPercentual: margem,
-    },
-    detalhamento: {
-      precoPorGrama: arredondar(precoPorGrama, 4),
-      custoFilamento: arredondar(custoFilamento),
-      custoEnergia: arredondar(custoEnergia),
-      custoDepreciacao: arredondar(custoDepreciacao),
-      subtotal: arredondar(subtotal),
-      margemPercentual: margem,
-      valorFinal: arredondar(valorFinal),
-    },
+    entrada,
+    detalhamento,
   });
 });

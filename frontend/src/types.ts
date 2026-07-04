@@ -49,3 +49,50 @@ export interface CalculoResultado {
     valorFinal: number;
   };
 }
+
+export interface Cliente {
+  id: string;
+  nome: string;
+  whatsapp: string | null;
+  criadoEm: string;
+}
+
+export interface NovoCliente {
+  nome: string;
+  whatsapp?: string;
+}
+
+export type StatusOrcamento = "PENDENTE" | "ACEITO" | "RECUSADO";
+
+export interface OrcamentoHistoricoItem {
+  id: string;
+  valor: string;
+  registradoEm: string;
+}
+
+export interface Orcamento {
+  id: string;
+  clienteId: string;
+  filamentoId: string;
+  pesoUsadoG: string;
+  horasImpressao: string;
+  valorCalculado: string;
+  valorAtual: string;
+  status: StatusOrcamento;
+  criadoEm: string;
+  cliente: Cliente;
+  filamento: Filamento;
+  historico?: OrcamentoHistoricoItem[];
+}
+
+export interface NovoOrcamento {
+  clienteId?: string;
+  clienteNome?: string;
+  clienteWhatsapp?: string;
+  filamentoId: string;
+  pesoUsadoG: number;
+  horasImpressao: number;
+  custoEnergiaHora: number;
+  taxaDepreciacaoHora: number;
+  margemPercentual: number;
+}

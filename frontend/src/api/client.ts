@@ -1,4 +1,14 @@
-import type { CalculoInput, CalculoResultado, Filamento, NovoFilamento } from "../types";
+import type {
+  CalculoInput,
+  CalculoResultado,
+  Cliente,
+  Filamento,
+  NovoCliente,
+  NovoFilamento,
+  NovoOrcamento,
+  Orcamento,
+  StatusOrcamento,
+} from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL as string;
 
@@ -37,6 +47,61 @@ export async function calcularOrcamento(dados: CalculoInput): Promise<CalculoRes
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(dados),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function listarClientes(): Promise<Cliente[]> {
+  const resposta = await fetch(`${API_URL}/clientes`);
+  return tratarResposta(resposta);
+}
+
+export async function criarCliente(dados: NovoCliente): Promise<Cliente> {
+  const resposta = await fetch(`${API_URL}/clientes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(dados),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function listarOrcamentos(status?: StatusOrcamento): Promise<Orcamento[]> {
+  const query = status ? `?status=${status}` : "";
+  const resposta = await fetch(`${API_URL}/orcamentos${query}`);
+  return tratarResposta(resposta);
+}
+
+export async function buscarOrcamento(id: string): Promise<Orcamento> {
+  const resposta = await fetch(`${API_URL}/orcamentos/${id}`);
+  return tratarResposta(resposta);
+}
+
+export async function criarOrcamento(dados: NovoOrcamento): Promise<Orcamento> {
+  const resposta = await fetch(`${API_URL}/orcamentos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(dados),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function atualizarValorOrcamento(id: string, valor: number): Promise<Orcamento> {
+  const resposta = await fetch(`${API_URL}/orcamentos/${id}/valor`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ valor }),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function atualizarStatusOrcamento(
+  id: string,
+  status: "ACEITO" | "RECUSADO"
+): Promise<Orcamento> {
+  const resposta = await fetch(`${API_URL}/orcamentos/${id}/status`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
   });
   return tratarResposta(resposta);
 }
