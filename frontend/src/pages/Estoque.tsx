@@ -1,5 +1,11 @@
 import { Fragment, useEffect, useState, type FormEvent } from "react";
-import { criarFilamento, excluirFilamento, listarFilamentos, listarMovimentos, reabastecerFilamento } from "../api/client";
+import {
+  criarFilamento,
+  excluirFilamento,
+  listarFilamentos,
+  listarMovimentos,
+  reabastecerFilamento,
+} from "../api/client";
 import type { Filamento, MovimentoEstoque } from "../types";
 import { MARCAS_INTERNACIONAIS, MARCAS_NACIONAIS, OUTRA_MARCA } from "../lib/marcas";
 
@@ -24,6 +30,7 @@ export function Estoque() {
 
   const [painel, setPainel] = useState<Painel>(null);
   const [quantidadeReabastecer, setQuantidadeReabastecer] = useState("");
+  const [precoReabastecer, setPrecoReabastecer] = useState("");
   const [processando, setProcessando] = useState(false);
   const [movimentosPorFilamento, setMovimentosPorFilamento] = useState<Record<string, MovimentoEstoque[]>>({});
 
@@ -94,18 +101,24 @@ export function Estoque() {
   function abrirReabastecer(filamentoId: string) {
     setPainel({ filamentoId, modo: "reabastecer" });
     setQuantidadeReabastecer("");
+    setPrecoReabastecer("");
   }
 
   async function confirmarReabastecimento(filamentoId: string) {
     const quantidade = Number(quantidadeReabastecer);
+    const preco = Number(precoReabastecer);
     if (Number.isNaN(quantidade) || quantidade <= 0) {
       setErro("Quantidade inválida");
+      return;
+    }
+    if (Number.isNaN(preco) || preco <= 0) {
+      setErro("Preço pago inválido");
       return;
     }
     setProcessando(true);
     setErro(null);
     try {
-      await reabastecerFilamento(filamentoId, quantidade);
+      await reabastecerFilamento(filamentoId, quantidade, preco);
       setPainel(null);
       await carregar();
       if (movimentosPorFilamento[filamentoId]) {
@@ -208,7 +221,7 @@ export function Estoque() {
           />
         </div>
         <div className="campo">
-          <label htmlFor="pesoTotalG">Peso total da bobina (g)</label>
+          <label htmlFor="pesoTotalG">Peso comprado agora (g)</label>
           <input
             id="pesoTotalG"
             required
@@ -236,6 +249,11 @@ export function Estoque() {
         </button>
       </form>
 
+      <p className="dica-cadastro">
+        <strong>Cadastrar filamento</strong> é para um tipo, cor ou marca que você nunca teve. Já comprou mais do
+        mesmo filamento que já existe na lista? Use o botão <strong>Reabastecer</strong> dele lá embaixo.
+      </p>
+
       {erro && <p className="erro">{erro}</p>}
 
       <h3>Filamentos cadastrados</h3>
@@ -250,8 +268,8 @@ export function Estoque() {
               <th>Tipo</th>
               <th>Cor</th>
               <th>Marca</th>
-              <th>Preço pago</th>
-              <th>Peso total</th>
+              <th>Preço/g</th>
+              <th>Total comprado</th>
               <th>Peso atual</th>
               <th>Estoque mínimo</th>
               <th></th>
@@ -268,7 +286,7 @@ export function Estoque() {
                     <td>{f.tipo}</td>
                     <td>{f.cor}</td>
                     <td>{f.marca || "—"}</td>
-                    <td>R$ {parseFloat(f.precoPago).toFixed(2)}</td>
+                    <td>{f.precoPorGrama ? `R$ ${parseFloat(f.precoPorGrama).toFixed(4)}` : "—"}</td>
                     <td>{parseFloat(f.pesoTotalG).toFixed(0)} g</td>
                     <td>
                       {parseFloat(f.pesoAtualG).toFixed(0)} g
@@ -300,6 +318,15 @@ export function Estoque() {
                             value={quantidadeReabastecer}
                             onChange={(e) => setQuantidadeReabastecer(e.target.value)}
                           />
+                          <label htmlFor={`preco-${f.id}`}>Preço pago nessa compra (R$)</label>
+                          <input
+                            id={`preco-${f.id}`}
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={precoReabastecer}
+                            onChange={(e) => setPrecoReabastecer(e.target.value)}
+                          />
                           <button disabled={processando} onClick={() => confirmarReabastecimento(f.id)}>
                             Confirmar
                           </button>
@@ -325,7 +352,9 @@ export function Estoque() {
                                   <span className={`badge-movimento badge-${m.tipo.toLowerCase()}`}>
                                     {m.tipo === "ENTRADA" ? "Entrada" : "Saída"}
                                   </span>{" "}
-                                  {parseFloat(m.quantidadeG).toFixed(0)}g — {new Date(m.data).toLocaleString("pt-BR")}
+                                  {parseFloat(m.quantidadeG).toFixed(0)}g
+                                  {m.precoPago && ` (R$ ${parseFloat(m.precoPago).toFixed(2)})`} —{" "}
+                                  {new Date(m.data).toLocaleString("pt-BR")}
                                 </li>
                               ))}
                             </ul>

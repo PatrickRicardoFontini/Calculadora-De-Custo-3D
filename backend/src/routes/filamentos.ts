@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 
 export const filamentosRouter = Router();
@@ -53,6 +54,8 @@ filamentosRouter.post("/", async (req, res) => {
   }
 
   const { tipo, cor, marca, precoPago, pesoTotalG, estoqueMinimoG } = req.body;
+  const precoPagoNum = Number(precoPago);
+  const pesoTotalGNum = Number(pesoTotalG);
 
   const filamento = await prisma.filamento.create({
     data: {
@@ -60,10 +63,11 @@ filamentosRouter.post("/", async (req, res) => {
       tipo,
       cor,
       marca: marca || null,
-      precoPago: Number(precoPago),
-      pesoTotalG: Number(pesoTotalG),
-      pesoAtualG: Number(pesoTotalG),
+      precoPago: precoPagoNum,
+      pesoTotalG: pesoTotalGNum,
+      pesoAtualG: pesoTotalGNum,
       estoqueMinimoG: Number(estoqueMinimoG),
+      precoPorGrama: precoPagoNum / pesoTotalGNum,
     },
   });
 
@@ -105,10 +109,17 @@ filamentosRouter.put("/:id", async (req, res) => {
 
 // POST /filamentos/:id/reabastecer - registra entrada de estoque (compra de material novo)
 filamentosRouter.post("/:id/reabastecer", async (req, res) => {
-  const { quantidadeG } = req.body;
+  const { quantidadeG, precoPago } = req.body;
 
+  const erros: string[] = [];
   if (quantidadeG === undefined || quantidadeG === null || quantidadeG === "" || Number.isNaN(Number(quantidadeG)) || Number(quantidadeG) <= 0) {
-    return res.status(400).json({ erro: "Campo 'quantidadeG' inválido" });
+    erros.push("Campo 'quantidadeG' inválido");
+  }
+  if (precoPago === undefined || precoPago === null || precoPago === "" || Number.isNaN(Number(precoPago)) || Number(precoPago) <= 0) {
+    erros.push("Campo 'precoPago' inválido");
+  }
+  if (erros.length > 0) {
+    return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
   }
 
   const filamento = await prisma.filamento.findFirst({
@@ -119,19 +130,26 @@ filamentosRouter.post("/:id/reabastecer", async (req, res) => {
   }
 
   const quantidade = Number(quantidadeG);
+  const precoPagoNum = Number(precoPago);
+  const precoPorGramaNovo = precoPagoNum / quantidade;
 
   const filamentoAtualizado = await prisma.$transaction(async (tx) => {
     await tx.movimentoEstoque.create({
       data: {
         filamentoId: filamento.id,
         quantidadeG: quantidade,
+        precoPago: precoPagoNum,
         tipo: "ENTRADA",
       },
     });
 
     return tx.filamento.update({
       where: { id: filamento.id },
-      data: { pesoAtualG: { increment: quantidade } },
+      data: {
+        pesoAtualG: { increment: quantidade },
+        pesoTotalG: { increment: quantidade },
+        precoPorGrama: precoPorGramaNovo,
+      },
     });
   });
 
@@ -165,7 +183,16 @@ filamentosRouter.delete("/:id", async (req, res) => {
     return res.status(404).json({ erro: "Filamento não encontrado" });
   }
 
-  await prisma.filamento.delete({ where: { id: existente.id } });
+  try {
+    await prisma.filamento.delete({ where: { id: existente.id } });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
+      return res.status(400).json({
+        erro: "Não é possível excluir um filamento que já tem orçamentos ou movimentações de estoque vinculados.",
+      });
+    }
+    throw err;
+  }
 
   res.status(204).send();
 });

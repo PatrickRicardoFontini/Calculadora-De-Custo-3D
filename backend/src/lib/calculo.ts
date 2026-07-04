@@ -25,10 +25,11 @@ export function arredondar(valor: number, casas = 2): number {
 }
 
 export function calcularCusto(filamento: Filamento, entrada: EntradaCalculo): DetalhamentoCalculo {
-  const precoPago = decimalToNumber(filamento.precoPago);
-  const pesoTotalG = decimalToNumber(filamento.pesoTotalG);
+  if (filamento.precoPorGrama === null) {
+    throw new Error("Filamento sem precoPorGrama definido");
+  }
 
-  const precoPorGrama = precoPago / pesoTotalG;
+  const precoPorGrama = decimalToNumber(filamento.precoPorGrama);
   const custoFilamento = precoPorGrama * entrada.pesoUsadoG;
   const custoEnergia = entrada.custoEnergiaHora * entrada.horasImpressao;
   const custoDepreciacao = entrada.taxaDepreciacaoHora * entrada.horasImpressao;

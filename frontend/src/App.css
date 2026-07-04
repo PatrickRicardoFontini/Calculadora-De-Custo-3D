@@ -479,3 +479,9 @@ button.botao-whatsapp:disabled {
 .campo-marca-customizada .link-acao {
   white-space: nowrap;
 }
+
+.dica-cadastro {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: -8px 0 20px;
+}

@@ -73,6 +73,9 @@ orcamentosRouter.post("/", async (req, res) => {
   if (!filamento) {
     return res.status(404).json({ erro: "Filamento não encontrado" });
   }
+  if (filamento.precoPorGrama === null) {
+    return res.status(400).json({ erro: "Filamento sem preço por grama definido. Reabasteça ou recadastre o filamento." });
+  }
 
   if (clienteId) {
     const cliente = await prisma.cliente.findFirst({
