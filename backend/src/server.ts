@@ -6,6 +6,7 @@ import { filamentosRouter } from "./routes/filamentos";
 import { calculadoraRouter } from "./routes/calculadora";
 import { clientesRouter } from "./routes/clientes";
 import { orcamentosRouter } from "./routes/orcamentos";
+import { receitaRouter } from "./routes/receita";
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -21,6 +22,7 @@ app.use("/api/filamentos", usuarioPadrao, filamentosRouter);
 app.use("/api/calculadora", usuarioPadrao, calculadoraRouter);
 app.use("/api/clientes", usuarioPadrao, clientesRouter);
 app.use("/api/orcamentos", usuarioPadrao, orcamentosRouter);
+app.use("/api/receita", usuarioPadrao, receitaRouter);
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);

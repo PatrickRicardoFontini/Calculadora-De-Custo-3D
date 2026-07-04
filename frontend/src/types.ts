@@ -111,3 +111,9 @@ export interface MovimentoEstoque {
   tipo: TipoMovimento;
   data: string;
 }
+
+export interface ReceitaMensal {
+  mes: string;
+  totalVendas: number;
+  quantidadeVendas: number;
+}

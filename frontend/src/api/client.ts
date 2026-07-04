@@ -9,6 +9,7 @@ import type {
   NovoOrcamento,
   Orcamento,
   OrcamentoComEstoque,
+  ReceitaMensal,
   StatusOrcamento,
 } from "../types";
 
@@ -119,5 +120,10 @@ export async function reabastecerFilamento(id: string, quantidadeG: number): Pro
 
 export async function listarMovimentos(filamentoId: string): Promise<MovimentoEstoque[]> {
   const resposta = await fetch(`${API_URL}/filamentos/${filamentoId}/movimentos`);
+  return tratarResposta(resposta);
+}
+
+export async function listarReceitaMensal(): Promise<ReceitaMensal[]> {
+  const resposta = await fetch(`${API_URL}/receita/mensal`);
   return tratarResposta(resposta);
 }
