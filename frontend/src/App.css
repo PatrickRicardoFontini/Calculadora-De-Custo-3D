@@ -461,3 +461,21 @@ button.botao-whatsapp:disabled {
   max-width: 220px;
   margin-bottom: 16px;
 }
+
+.campo-marca-customizada {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.campo-marca-customizada input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.campo-marca-customizada .link-acao {
+  white-space: nowrap;
+}

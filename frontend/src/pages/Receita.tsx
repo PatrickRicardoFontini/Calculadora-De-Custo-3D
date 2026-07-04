@@ -143,6 +143,7 @@ export function Receita() {
                     <td>{v.clienteNome}</td>
                     <td>
                       {v.filamentoTipo} {v.filamentoCor}
+                      {v.filamentoMarca ? ` (${v.filamentoMarca})` : ""}
                     </td>
                     <td>{v.pesoUsadoG.toFixed(0)} g</td>
                     <td>{v.horasImpressao.toFixed(1)} h</td>

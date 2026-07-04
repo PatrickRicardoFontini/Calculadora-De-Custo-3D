@@ -134,7 +134,9 @@ export function Orcamentos() {
                     <strong>{orcamento.cliente.nome}</strong>
                     <span className="detalhe-secundario">
                       {" "}
-                      · {orcamento.filamento.tipo} {orcamento.filamento.cor} · {parseFloat(orcamento.pesoUsadoG).toFixed(0)}g ·{" "}
+                      · {orcamento.filamento.tipo} {orcamento.filamento.cor}
+                      {orcamento.filamento.marca ? ` (${orcamento.filamento.marca})` : ""} ·{" "}
+                      {parseFloat(orcamento.pesoUsadoG).toFixed(0)}g ·{" "}
                       {parseFloat(orcamento.horasImpressao).toFixed(1)}h
                     </span>
                   </div>

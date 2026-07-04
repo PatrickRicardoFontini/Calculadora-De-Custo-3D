@@ -2,6 +2,7 @@ export interface Filamento {
   id: string;
   tipo: string;
   cor: string;
+  marca: string | null;
   precoPago: string;
   pesoTotalG: string;
   pesoAtualG: string;
@@ -12,6 +13,7 @@ export interface Filamento {
 export interface NovoFilamento {
   tipo: string;
   cor: string;
+  marca?: string;
   precoPago: number;
   pesoTotalG: number;
   estoqueMinimoG: number;
@@ -124,6 +126,7 @@ export interface VendaDoMes {
   clienteNome: string;
   filamentoTipo: string;
   filamentoCor: string;
+  filamentoMarca: string | null;
   pesoUsadoG: number;
   horasImpressao: number;
   valorFinal: number;

@@ -1,10 +1,12 @@
 import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { criarFilamento, excluirFilamento, listarFilamentos, listarMovimentos, reabastecerFilamento } from "../api/client";
 import type { Filamento, MovimentoEstoque } from "../types";
+import { MARCAS_INTERNACIONAIS, MARCAS_NACIONAIS, OUTRA_MARCA } from "../lib/marcas";
 
 const valoresIniciais = {
   tipo: "",
   cor: "",
+  marca: "",
   precoPago: "",
   pesoTotalG: "",
   estoqueMinimoG: "",
@@ -15,6 +17,7 @@ type Painel = { filamentoId: string; modo: "reabastecer" | "movimentos" } | null
 export function Estoque() {
   const [filamentos, setFilamentos] = useState<Filamento[]>([]);
   const [form, setForm] = useState(valoresIniciais);
+  const [modoMarca, setModoMarca] = useState<"lista" | "outra">("lista");
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -45,6 +48,16 @@ export function Estoque() {
     setForm((atual) => ({ ...atual, [campo]: valor }));
   }
 
+  function selecionarMarca(valor: string) {
+    if (valor === OUTRA_MARCA) {
+      setModoMarca("outra");
+      atualizarCampo("marca", "");
+    } else {
+      setModoMarca("lista");
+      atualizarCampo("marca", valor);
+    }
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setEnviando(true);
@@ -53,11 +66,13 @@ export function Estoque() {
       await criarFilamento({
         tipo: form.tipo,
         cor: form.cor,
+        marca: form.marca || undefined,
         precoPago: Number(form.precoPago),
         pesoTotalG: Number(form.pesoTotalG),
         estoqueMinimoG: Number(form.estoqueMinimoG),
       });
       setForm(valoresIniciais);
+      setModoMarca("lista");
       await carregar();
     } catch (err) {
       setErro((err as Error).message);
@@ -146,6 +161,41 @@ export function Estoque() {
           />
         </div>
         <div className="campo">
+          <label htmlFor="marca">Marca</label>
+          {modoMarca === "lista" ? (
+            <select id="marca" value={form.marca} onChange={(e) => selecionarMarca(e.target.value)}>
+              <option value="">Selecione (opcional)</option>
+              <optgroup label="Nacionais">
+                {MARCAS_NACIONAIS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Internacionais">
+                {MARCAS_INTERNACIONAIS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </optgroup>
+              <option value={OUTRA_MARCA}>Outra</option>
+            </select>
+          ) : (
+            <div className="campo-marca-customizada">
+              <input
+                autoFocus
+                placeholder="Digite a marca"
+                value={form.marca}
+                onChange={(e) => atualizarCampo("marca", e.target.value)}
+              />
+              <button type="button" className="link-acao" onClick={() => selecionarMarca("")}>
+                Escolher da lista
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="campo">
           <label htmlFor="precoPago">Preço pago (R$)</label>
           <input
             id="precoPago"
@@ -199,6 +249,7 @@ export function Estoque() {
             <tr>
               <th>Tipo</th>
               <th>Cor</th>
+              <th>Marca</th>
               <th>Preço pago</th>
               <th>Peso total</th>
               <th>Peso atual</th>
@@ -216,6 +267,7 @@ export function Estoque() {
                   <tr className={abaixoDoMinimo ? "linha-alerta" : ""}>
                     <td>{f.tipo}</td>
                     <td>{f.cor}</td>
+                    <td>{f.marca || "—"}</td>
                     <td>R$ {parseFloat(f.precoPago).toFixed(2)}</td>
                     <td>{parseFloat(f.pesoTotalG).toFixed(0)} g</td>
                     <td>
@@ -237,7 +289,7 @@ export function Estoque() {
                   </tr>
                   {painelAberto === "reabastecer" && (
                     <tr key={`${f.id}-reabastecer`}>
-                      <td colSpan={7}>
+                      <td colSpan={8}>
                         <div className="painel-inline">
                           <label htmlFor={`quantidade-${f.id}`}>Quantidade comprada (g)</label>
                           <input
@@ -260,7 +312,7 @@ export function Estoque() {
                   )}
                   {painelAberto === "movimentos" && (
                     <tr key={`${f.id}-movimentos`}>
-                      <td colSpan={7}>
+                      <td colSpan={8}>
                         <div className="painel-inline painel-movimentos">
                           {!movimentosPorFilamento[f.id] ? (
                             <p>Carregando movimentações...</p>

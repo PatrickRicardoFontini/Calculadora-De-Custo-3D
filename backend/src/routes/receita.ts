@@ -77,6 +77,7 @@ receitaRouter.get("/vendas", async (req, res) => {
     clienteNome: venda.orcamento.cliente.nome,
     filamentoTipo: venda.orcamento.filamento.tipo,
     filamentoCor: venda.orcamento.filamento.cor,
+    filamentoMarca: venda.orcamento.filamento.marca,
     pesoUsadoG: decimalToNumber(venda.orcamento.pesoUsadoG),
     horasImpressao: decimalToNumber(venda.orcamento.horasImpressao),
     valorFinal: decimalToNumber(venda.valorFinal),

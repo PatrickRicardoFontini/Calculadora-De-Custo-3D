@@ -52,13 +52,14 @@ filamentosRouter.post("/", async (req, res) => {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
   }
 
-  const { tipo, cor, precoPago, pesoTotalG, estoqueMinimoG } = req.body;
+  const { tipo, cor, marca, precoPago, pesoTotalG, estoqueMinimoG } = req.body;
 
   const filamento = await prisma.filamento.create({
     data: {
       usuarioId: req.usuarioId,
       tipo,
       cor,
+      marca: marca || null,
       precoPago: Number(precoPago),
       pesoTotalG: Number(pesoTotalG),
       pesoAtualG: Number(pesoTotalG),
@@ -84,13 +85,14 @@ filamentosRouter.put("/:id", async (req, res) => {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
   }
 
-  const { tipo, cor, precoPago, pesoTotalG, pesoAtualG, estoqueMinimoG } = req.body;
+  const { tipo, cor, marca, precoPago, pesoTotalG, pesoAtualG, estoqueMinimoG } = req.body;
 
   const filamento = await prisma.filamento.update({
     where: { id: existente.id },
     data: {
       ...(tipo !== undefined && { tipo }),
       ...(cor !== undefined && { cor }),
+      ...(marca !== undefined && { marca: marca || null }),
       ...(precoPago !== undefined && { precoPago: Number(precoPago) }),
       ...(pesoTotalG !== undefined && { pesoTotalG: Number(pesoTotalG) }),
       ...(pesoAtualG !== undefined && { pesoAtualG: Number(pesoAtualG) }),

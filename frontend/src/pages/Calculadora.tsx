@@ -125,7 +125,8 @@ export function Calculadora({ aoSalvarOrcamento }: CalculadoraProps) {
             >
               {filamentos.map((f) => (
                 <option key={f.id} value={f.id}>
-                  {f.tipo} - {f.cor} (R$ {parseFloat(f.precoPago).toFixed(2)} / {parseFloat(f.pesoTotalG).toFixed(0)} g)
+                  {f.tipo} - {f.cor}
+                  {f.marca ? ` (${f.marca})` : ""} (R$ {parseFloat(f.precoPago).toFixed(2)} / {parseFloat(f.pesoTotalG).toFixed(0)} g)
                 </option>
               ))}
             </select>
