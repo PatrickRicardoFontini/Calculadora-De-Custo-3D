@@ -3,10 +3,12 @@ import type {
   CalculoResultado,
   Cliente,
   Filamento,
+  MovimentoEstoque,
   NovoCliente,
   NovoFilamento,
   NovoOrcamento,
   Orcamento,
+  OrcamentoComEstoque,
   StatusOrcamento,
 } from "../types";
 
@@ -97,11 +99,25 @@ export async function atualizarValorOrcamento(id: string, valor: number): Promis
 export async function atualizarStatusOrcamento(
   id: string,
   status: "ACEITO" | "RECUSADO"
-): Promise<Orcamento> {
+): Promise<OrcamentoComEstoque> {
   const resposta = await fetch(`${API_URL}/orcamentos/${id}/status`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status }),
   });
+  return tratarResposta(resposta);
+}
+
+export async function reabastecerFilamento(id: string, quantidadeG: number): Promise<Filamento> {
+  const resposta = await fetch(`${API_URL}/filamentos/${id}/reabastecer`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ quantidadeG }),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function listarMovimentos(filamentoId: string): Promise<MovimentoEstoque[]> {
+  const resposta = await fetch(`${API_URL}/filamentos/${filamentoId}/movimentos`);
   return tratarResposta(resposta);
 }

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { calcularCusto, validarEntradaCalculo } from "../lib/calculo";
+import { decimalToNumber } from "../lib/decimal";
 import type { StatusOrcamento } from "@prisma/client";
 
 export const orcamentosRouter = Router();
@@ -197,11 +198,54 @@ orcamentosRouter.put("/:id/status", async (req, res) => {
     return res.status(400).json({ erro: "Só é possível alterar o status de orçamentos pendentes" });
   }
 
-  const orcamentoAtualizado = await prisma.orcamento.update({
+  if (status === "RECUSADO") {
+    const orcamentoAtualizado = await prisma.orcamento.update({
+      where: { id: orcamento.id },
+      data: { status },
+      include: INCLUDE_PADRAO,
+    });
+
+    return res.json({ ...orcamentoAtualizado, estoqueBaixo: false });
+  }
+
+  // ACEITO: gera a venda, a saída de estoque e desconta o filamento, tudo em uma transação
+  const pesoUsado = decimalToNumber(orcamento.pesoUsadoG);
+
+  const filamentoAtualizado = await prisma.$transaction(async (tx) => {
+    await tx.orcamento.update({
+      where: { id: orcamento.id },
+      data: { status: "ACEITO" },
+    });
+
+    const venda = await tx.venda.create({
+      data: {
+        usuarioId: req.usuarioId,
+        orcamentoId: orcamento.id,
+        valorFinal: orcamento.valorAtual,
+      },
+    });
+
+    await tx.movimentoEstoque.create({
+      data: {
+        filamentoId: orcamento.filamentoId,
+        vendaId: venda.id,
+        quantidadeG: pesoUsado,
+        tipo: "SAIDA",
+      },
+    });
+
+    return tx.filamento.update({
+      where: { id: orcamento.filamentoId },
+      data: { pesoAtualG: { decrement: pesoUsado } },
+    });
+  });
+
+  const orcamentoCompleto = await prisma.orcamento.findFirst({
     where: { id: orcamento.id },
-    data: { status },
     include: INCLUDE_PADRAO,
   });
 
-  res.json(orcamentoAtualizado);
+  const estoqueBaixo = decimalToNumber(filamentoAtualizado.pesoAtualG) < decimalToNumber(filamentoAtualizado.estoqueMinimoG);
+
+  res.json({ ...orcamentoCompleto, estoqueBaixo });
 });

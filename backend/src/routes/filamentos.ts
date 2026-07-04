@@ -101,6 +101,58 @@ filamentosRouter.put("/:id", async (req, res) => {
   res.json(filamento);
 });
 
+// POST /filamentos/:id/reabastecer - registra entrada de estoque (compra de material novo)
+filamentosRouter.post("/:id/reabastecer", async (req, res) => {
+  const { quantidadeG } = req.body;
+
+  if (quantidadeG === undefined || quantidadeG === null || quantidadeG === "" || Number.isNaN(Number(quantidadeG)) || Number(quantidadeG) <= 0) {
+    return res.status(400).json({ erro: "Campo 'quantidadeG' inválido" });
+  }
+
+  const filamento = await prisma.filamento.findFirst({
+    where: { id: req.params.id, usuarioId: req.usuarioId },
+  });
+  if (!filamento) {
+    return res.status(404).json({ erro: "Filamento não encontrado" });
+  }
+
+  const quantidade = Number(quantidadeG);
+
+  const filamentoAtualizado = await prisma.$transaction(async (tx) => {
+    await tx.movimentoEstoque.create({
+      data: {
+        filamentoId: filamento.id,
+        quantidadeG: quantidade,
+        tipo: "ENTRADA",
+      },
+    });
+
+    return tx.filamento.update({
+      where: { id: filamento.id },
+      data: { pesoAtualG: { increment: quantidade } },
+    });
+  });
+
+  res.json(filamentoAtualizado);
+});
+
+// GET /filamentos/:id/movimentos - histórico de entradas e saídas de estoque do filamento
+filamentosRouter.get("/:id/movimentos", async (req, res) => {
+  const filamento = await prisma.filamento.findFirst({
+    where: { id: req.params.id, usuarioId: req.usuarioId },
+  });
+  if (!filamento) {
+    return res.status(404).json({ erro: "Filamento não encontrado" });
+  }
+
+  const movimentos = await prisma.movimentoEstoque.findMany({
+    where: { filamentoId: filamento.id },
+    orderBy: { data: "desc" },
+  });
+
+  res.json(movimentos);
+});
+
 // DELETE /filamentos/:id
 filamentosRouter.delete("/:id", async (req, res) => {
   const existente = await prisma.filamento.findFirst({

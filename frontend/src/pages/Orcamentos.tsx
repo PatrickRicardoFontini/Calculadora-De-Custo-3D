@@ -21,6 +21,7 @@ export function Orcamentos() {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [valorEditado, setValorEditado] = useState("");
   const [processandoId, setProcessandoId] = useState<string | null>(null);
+  const [avisoEstoqueBaixoId, setAvisoEstoqueBaixoId] = useState<string | null>(null);
 
   async function carregar() {
     setCarregando(true);
@@ -67,8 +68,12 @@ export function Orcamentos() {
   async function mudarStatus(id: string, status: "ACEITO" | "RECUSADO") {
     setProcessandoId(id);
     setErro(null);
+    setAvisoEstoqueBaixoId(null);
     try {
-      await atualizarStatusOrcamento(id, status);
+      const resultado = await atualizarStatusOrcamento(id, status);
+      if (status === "ACEITO" && resultado.estoqueBaixo) {
+        setAvisoEstoqueBaixoId(id);
+      }
       await carregar();
     } catch (err) {
       setErro((err as Error).message);
@@ -189,6 +194,12 @@ export function Orcamentos() {
                         </button>
                       )}
                     </div>
+                  )}
+
+                  {avisoEstoqueBaixoId === orcamento.id && (
+                    <p className="aviso-estoque-baixo">
+                      Aceito, mas o estoque de {orcamento.filamento.tipo} {orcamento.filamento.cor} está baixo agora.
+                    </p>
                   )}
 
                   {expandidoId === orcamento.id && orcamento.historico && (

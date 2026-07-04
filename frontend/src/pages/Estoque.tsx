@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { criarFilamento, excluirFilamento, listarFilamentos } from "../api/client";
-import type { Filamento } from "../types";
+import { Fragment, useEffect, useState, type FormEvent } from "react";
+import { criarFilamento, excluirFilamento, listarFilamentos, listarMovimentos, reabastecerFilamento } from "../api/client";
+import type { Filamento, MovimentoEstoque } from "../types";
 
 const valoresIniciais = {
   tipo: "",
@@ -10,12 +10,19 @@ const valoresIniciais = {
   estoqueMinimoG: "",
 };
 
+type Painel = { filamentoId: string; modo: "reabastecer" | "movimentos" } | null;
+
 export function Estoque() {
   const [filamentos, setFilamentos] = useState<Filamento[]>([]);
   const [form, setForm] = useState(valoresIniciais);
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+
+  const [painel, setPainel] = useState<Painel>(null);
+  const [quantidadeReabastecer, setQuantidadeReabastecer] = useState("");
+  const [processando, setProcessando] = useState(false);
+  const [movimentosPorFilamento, setMovimentosPorFilamento] = useState<Record<string, MovimentoEstoque[]>>({});
 
   async function carregar() {
     setCarregando(true);
@@ -66,6 +73,50 @@ export function Estoque() {
       await carregar();
     } catch (err) {
       setErro((err as Error).message);
+    }
+  }
+
+  function abrirReabastecer(filamentoId: string) {
+    setPainel({ filamentoId, modo: "reabastecer" });
+    setQuantidadeReabastecer("");
+  }
+
+  async function confirmarReabastecimento(filamentoId: string) {
+    const quantidade = Number(quantidadeReabastecer);
+    if (Number.isNaN(quantidade) || quantidade <= 0) {
+      setErro("Quantidade inválida");
+      return;
+    }
+    setProcessando(true);
+    setErro(null);
+    try {
+      await reabastecerFilamento(filamentoId, quantidade);
+      setPainel(null);
+      await carregar();
+      if (movimentosPorFilamento[filamentoId]) {
+        const atualizados = await listarMovimentos(filamentoId);
+        setMovimentosPorFilamento((atual) => ({ ...atual, [filamentoId]: atualizados }));
+      }
+    } catch (err) {
+      setErro((err as Error).message);
+    } finally {
+      setProcessando(false);
+    }
+  }
+
+  async function alternarMovimentos(filamentoId: string) {
+    if (painel?.modo === "movimentos" && painel.filamentoId === filamentoId) {
+      setPainel(null);
+      return;
+    }
+    setPainel({ filamentoId, modo: "movimentos" });
+    if (!movimentosPorFilamento[filamentoId]) {
+      try {
+        const dados = await listarMovimentos(filamentoId);
+        setMovimentosPorFilamento((atual) => ({ ...atual, [filamentoId]: dados }));
+      } catch (err) {
+        setErro((err as Error).message);
+      }
     }
   }
 
@@ -158,23 +209,80 @@ export function Estoque() {
           <tbody>
             {filamentos.map((f) => {
               const abaixoDoMinimo = parseFloat(f.pesoAtualG) < parseFloat(f.estoqueMinimoG);
+              const painelAberto = painel?.filamentoId === f.id ? painel.modo : null;
+
               return (
-                <tr key={f.id} className={abaixoDoMinimo ? "linha-alerta" : ""}>
-                  <td>{f.tipo}</td>
-                  <td>{f.cor}</td>
-                  <td>R$ {parseFloat(f.precoPago).toFixed(2)}</td>
-                  <td>{parseFloat(f.pesoTotalG).toFixed(0)} g</td>
-                  <td>
-                    {parseFloat(f.pesoAtualG).toFixed(0)} g
-                    {abaixoDoMinimo && <span className="badge-alerta"> abaixo do mínimo</span>}
-                  </td>
-                  <td>{parseFloat(f.estoqueMinimoG).toFixed(0)} g</td>
-                  <td>
-                    <button className="botao-perigo" onClick={() => handleExcluir(f.id)}>
-                      Excluir
-                    </button>
-                  </td>
-                </tr>
+                <Fragment key={f.id}>
+                  <tr className={abaixoDoMinimo ? "linha-alerta" : ""}>
+                    <td>{f.tipo}</td>
+                    <td>{f.cor}</td>
+                    <td>R$ {parseFloat(f.precoPago).toFixed(2)}</td>
+                    <td>{parseFloat(f.pesoTotalG).toFixed(0)} g</td>
+                    <td>
+                      {parseFloat(f.pesoAtualG).toFixed(0)} g
+                      {abaixoDoMinimo && <span className="badge-alerta"> abaixo do mínimo</span>}
+                    </td>
+                    <td>{parseFloat(f.estoqueMinimoG).toFixed(0)} g</td>
+                    <td className="celula-acoes">
+                      <button className="botao-secundario" onClick={() => abrirReabastecer(f.id)}>
+                        Reabastecer
+                      </button>
+                      <button className="link-acao" onClick={() => alternarMovimentos(f.id)}>
+                        {painelAberto === "movimentos" ? "Ocultar movimentações" : "Ver movimentações"}
+                      </button>
+                      <button className="botao-perigo" onClick={() => handleExcluir(f.id)}>
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                  {painelAberto === "reabastecer" && (
+                    <tr key={`${f.id}-reabastecer`}>
+                      <td colSpan={7}>
+                        <div className="painel-inline">
+                          <label htmlFor={`quantidade-${f.id}`}>Quantidade comprada (g)</label>
+                          <input
+                            id={`quantidade-${f.id}`}
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={quantidadeReabastecer}
+                            onChange={(e) => setQuantidadeReabastecer(e.target.value)}
+                          />
+                          <button disabled={processando} onClick={() => confirmarReabastecimento(f.id)}>
+                            Confirmar
+                          </button>
+                          <button className="botao-secundario" onClick={() => setPainel(null)}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  {painelAberto === "movimentos" && (
+                    <tr key={`${f.id}-movimentos`}>
+                      <td colSpan={7}>
+                        <div className="painel-inline painel-movimentos">
+                          {!movimentosPorFilamento[f.id] ? (
+                            <p>Carregando movimentações...</p>
+                          ) : movimentosPorFilamento[f.id].length === 0 ? (
+                            <p>Nenhuma movimentação registrada ainda.</p>
+                          ) : (
+                            <ul>
+                              {movimentosPorFilamento[f.id].map((m) => (
+                                <li key={m.id}>
+                                  <span className={`badge-movimento badge-${m.tipo.toLowerCase()}`}>
+                                    {m.tipo === "ENTRADA" ? "Entrada" : "Saída"}
+                                  </span>{" "}
+                                  {parseFloat(m.quantidadeG).toFixed(0)}g — {new Date(m.data).toLocaleString("pt-BR")}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
           </tbody>

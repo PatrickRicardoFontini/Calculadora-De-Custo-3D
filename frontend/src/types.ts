@@ -96,3 +96,18 @@ export interface NovoOrcamento {
   taxaDepreciacaoHora: number;
   margemPercentual: number;
 }
+
+export interface OrcamentoComEstoque extends Orcamento {
+  estoqueBaixo: boolean;
+}
+
+export type TipoMovimento = "ENTRADA" | "SAIDA";
+
+export interface MovimentoEstoque {
+  id: string;
+  filamentoId: string;
+  vendaId: string | null;
+  quantidadeG: string;
+  tipo: TipoMovimento;
+  data: string;
+}
