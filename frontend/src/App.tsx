@@ -3,6 +3,7 @@ import { Estoque } from "./pages/Estoque";
 import { Calculadora } from "./pages/Calculadora";
 import { Orcamentos } from "./pages/Orcamentos";
 import { Receita } from "./pages/Receita";
+import { Maquinas } from "./pages/Maquinas";
 import { Login } from "./pages/Login";
 import { Registro } from "./pages/Registro";
 import { buscarUsuarioAtual } from "./api/client";
@@ -10,7 +11,7 @@ import { limparToken, obterToken } from "./lib/auth";
 import type { Usuario } from "./types";
 import "./App.css";
 
-type Aba = "estoque" | "calculadora" | "orcamentos" | "receita";
+type Aba = "estoque" | "calculadora" | "orcamentos" | "receita" | "maquinas";
 
 function App() {
   const [aba, setAba] = useState<Aba>("estoque");
@@ -80,13 +81,17 @@ function App() {
           <button className={aba === "receita" ? "aba-ativa" : ""} onClick={() => setAba("receita")}>
             Receita
           </button>
+          <button className={aba === "maquinas" ? "aba-ativa" : ""} onClick={() => setAba("maquinas")}>
+            Máquinas
+          </button>
         </nav>
       </header>
       <main>
         {aba === "estoque" && <Estoque />}
-        {aba === "calculadora" && <Calculadora aoSalvarOrcamento={() => setAba("orcamentos")} />}
+        {aba === "calculadora" && <Calculadora usuario={usuario} aoSalvarOrcamento={() => setAba("orcamentos")} />}
         {aba === "orcamentos" && <Orcamentos />}
         {aba === "receita" && <Receita />}
+        {aba === "maquinas" && <Maquinas usuario={usuario} aoAtualizarUsuario={setUsuario} />}
       </main>
     </div>
   );

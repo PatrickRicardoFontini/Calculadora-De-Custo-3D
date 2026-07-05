@@ -1,4 +1,4 @@
-import type { Filamento } from "@prisma/client";
+import type { Filamento, Maquina } from "@prisma/client";
 import { decimalToNumber } from "./decimal";
 
 export interface EntradaCalculo {
@@ -45,6 +45,19 @@ export function calcularCusto(filamento: Filamento, entrada: EntradaCalculo): De
     margemPercentual: entrada.margemPercentual,
     valorFinal: arredondar(valorFinal),
   };
+}
+
+// Calcula sempre na hora a partir dos dados brutos da máquina e do preço do kWh do
+// usuário, nunca guarda o resultado, pra refletir mudanças de preço imediatamente
+export function calcularCustoEnergiaHora(maquina: Maquina, precoKwh: number): number {
+  const potenciaKw = decimalToNumber(maquina.potenciaWatts) / 1000;
+  return arredondar(potenciaKw * precoKwh, 4);
+}
+
+export function calcularTaxaDepreciacaoHora(maquina: Maquina): number {
+  const precoCompra = decimalToNumber(maquina.precoCompra);
+  const vidaUtilHoras = decimalToNumber(maquina.vidaUtilHoras);
+  return arredondar(precoCompra / vidaUtilHoras, 4);
 }
 
 export function validarEntradaCalculo(body: Record<string, unknown>): string[] {

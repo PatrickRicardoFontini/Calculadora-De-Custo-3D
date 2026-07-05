@@ -547,3 +547,14 @@ button.botao-whatsapp:disabled {
   color: var(--text-muted);
   margin: -8px 0 20px;
 }
+
+.nota-campo {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.formulario-config {
+  background: #f0f4ff;
+  border-color: var(--accent-border);
+}

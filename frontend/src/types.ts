@@ -2,6 +2,8 @@ export interface Usuario {
   id: string;
   nome: string;
   email: string;
+  precoKwh: string | null;
+  margemPadrao: string | null;
 }
 
 export interface RespostaAuth {
@@ -37,6 +39,22 @@ export interface CalculoInput {
   custoEnergiaHora: number;
   taxaDepreciacaoHora: number;
   margemPercentual: number;
+}
+
+export interface Maquina {
+  id: string;
+  nome: string;
+  potenciaWatts: string;
+  precoCompra: string;
+  vidaUtilHoras: string;
+  criadoEm: string;
+}
+
+export interface NovaMaquina {
+  nome: string;
+  potenciaWatts: number;
+  precoCompra: number;
+  vidaUtilHoras: number;
 }
 
 export interface CalculoResultado {
@@ -87,6 +105,7 @@ export interface Orcamento {
   id: string;
   clienteId: string;
   filamentoId: string;
+  maquinaId: string | null;
   pesoUsadoG: string;
   horasImpressao: string;
   valorCalculado: string;
@@ -95,6 +114,7 @@ export interface Orcamento {
   criadoEm: string;
   cliente: Cliente;
   filamento: Filamento;
+  maquina: Maquina | null;
   historico?: OrcamentoHistoricoItem[];
 }
 
@@ -103,6 +123,7 @@ export interface NovoOrcamento {
   clienteNome?: string;
   clienteWhatsapp?: string;
   filamentoId: string;
+  maquinaId?: string;
   pesoUsadoG: number;
   horasImpressao: number;
   custoEnergiaHora: number;

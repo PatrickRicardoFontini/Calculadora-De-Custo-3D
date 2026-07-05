@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
-import { calcularCusto, validarEntradaCalculo } from "../lib/calculo";
+import { calcularCusto, calcularCustoEnergiaHora, calcularTaxaDepreciacaoHora } from "../lib/calculo";
 import { decimalToNumber } from "../lib/decimal";
 import type { StatusOrcamento } from "@prisma/client";
 
@@ -11,6 +11,7 @@ const STATUS_VALIDOS: StatusOrcamento[] = ["PENDENTE", "ACEITO", "RECUSADO"];
 const INCLUDE_PADRAO = {
   cliente: true,
   filamento: true,
+  maquina: true,
 } as const;
 
 // GET /orcamentos - lista orçamentos do usuário, com filtro opcional por status
@@ -52,8 +53,18 @@ orcamentosRouter.get("/:id", async (req, res) => {
 
 // POST /orcamentos - cria orçamento vinculado a um cliente (existente ou novo) e a um filamento
 orcamentosRouter.post("/", async (req, res) => {
-  const { clienteId, clienteNome, clienteWhatsapp, filamentoId, pesoUsadoG, horasImpressao, custoEnergiaHora, taxaDepreciacaoHora, margemPercentual } =
-    req.body;
+  const {
+    clienteId,
+    clienteNome,
+    clienteWhatsapp,
+    filamentoId,
+    maquinaId,
+    pesoUsadoG,
+    horasImpressao,
+    custoEnergiaHora,
+    taxaDepreciacaoHora,
+    margemPercentual,
+  } = req.body;
 
   const erros: string[] = [];
   if (!filamentoId) {
@@ -62,7 +73,24 @@ orcamentosRouter.post("/", async (req, res) => {
   if (!clienteId && !clienteNome) {
     erros.push("Informe clienteId de um cliente existente ou clienteNome para criar um novo");
   }
-  erros.push(...validarEntradaCalculo(req.body));
+  for (const campo of ["pesoUsadoG", "horasImpressao", "margemPercentual"]) {
+    const valor = req.body[campo];
+    if (valor === undefined || valor === null || valor === "") {
+      erros.push(`Campo obrigatório ausente: ${campo}`);
+    } else if (Number.isNaN(Number(valor))) {
+      erros.push(`Campo numérico inválido: ${campo}`);
+    }
+  }
+  // custoEnergiaHora e taxaDepreciacaoHora só são obrigatórios sem máquina vinculada;
+  // com máquina, são calculados automaticamente, mas continuam aceitos como override manual
+  for (const campo of ["custoEnergiaHora", "taxaDepreciacaoHora"]) {
+    const valor = req.body[campo];
+    if (!maquinaId && (valor === undefined || valor === null || valor === "")) {
+      erros.push(`Campo obrigatório ausente: ${campo}`);
+    } else if (valor !== undefined && valor !== null && valor !== "" && Number.isNaN(Number(valor))) {
+      erros.push(`Campo numérico inválido: ${campo}`);
+    }
+  }
   if (erros.length > 0) {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
   }
@@ -86,11 +114,43 @@ orcamentosRouter.post("/", async (req, res) => {
     }
   }
 
+  let custoEnergiaHoraFinal: number;
+  let taxaDepreciacaoHoraFinal: number;
+
+  if (maquinaId) {
+    const maquina = await prisma.maquina.findFirst({
+      where: { id: maquinaId, usuarioId: req.usuarioId },
+    });
+    if (!maquina) {
+      return res.status(404).json({ erro: "Máquina não encontrada" });
+    }
+
+    if (custoEnergiaHora !== undefined && custoEnergiaHora !== null && custoEnergiaHora !== "") {
+      custoEnergiaHoraFinal = Number(custoEnergiaHora);
+    } else {
+      const usuario = await prisma.usuario.findUnique({ where: { id: req.usuarioId } });
+      if (!usuario?.precoKwh) {
+        return res.status(400).json({
+          erro: "Configure o preço do kWh na aba Máquinas antes de calcular automaticamente, ou informe custoEnergiaHora manualmente.",
+        });
+      }
+      custoEnergiaHoraFinal = calcularCustoEnergiaHora(maquina, decimalToNumber(usuario.precoKwh));
+    }
+
+    taxaDepreciacaoHoraFinal =
+      taxaDepreciacaoHora !== undefined && taxaDepreciacaoHora !== null && taxaDepreciacaoHora !== ""
+        ? Number(taxaDepreciacaoHora)
+        : calcularTaxaDepreciacaoHora(maquina);
+  } else {
+    custoEnergiaHoraFinal = Number(custoEnergiaHora);
+    taxaDepreciacaoHoraFinal = Number(taxaDepreciacaoHora);
+  }
+
   const entrada = {
     pesoUsadoG: Number(pesoUsadoG),
     horasImpressao: Number(horasImpressao),
-    custoEnergiaHora: Number(custoEnergiaHora),
-    taxaDepreciacaoHora: Number(taxaDepreciacaoHora),
+    custoEnergiaHora: custoEnergiaHoraFinal,
+    taxaDepreciacaoHora: taxaDepreciacaoHoraFinal,
     margemPercentual: Number(margemPercentual),
   };
 
@@ -114,6 +174,7 @@ orcamentosRouter.post("/", async (req, res) => {
         usuarioId: req.usuarioId,
         clienteId: clienteIdFinal,
         filamentoId: filamento.id,
+        maquinaId: maquinaId || null,
         pesoUsadoG: entrada.pesoUsadoG,
         horasImpressao: entrada.horasImpressao,
         valorCalculado: valorFinal,

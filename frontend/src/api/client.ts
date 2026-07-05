@@ -3,7 +3,9 @@ import type {
   CalculoResultado,
   Cliente,
   Filamento,
+  Maquina,
   MovimentoEstoque,
+  NovaMaquina,
   NovoCliente,
   NovoFilamento,
   NovoOrcamento,
@@ -62,6 +64,49 @@ export async function login(email: string, senha: string): Promise<RespostaAuth>
 
 export async function buscarUsuarioAtual(): Promise<Usuario> {
   const resposta = await fetch(`${API_URL}/auth/me`, { headers: headersComAuth() });
+  return tratarResposta(resposta);
+}
+
+export async function atualizarConfiguracoes(
+  precoKwh: number | null,
+  margemPadrao: number | null
+): Promise<Usuario> {
+  const resposta = await fetch(`${API_URL}/auth/configuracoes`, {
+    method: "PUT",
+    headers: headersComAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ precoKwh, margemPadrao }),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function listarMaquinas(): Promise<Maquina[]> {
+  const resposta = await fetch(`${API_URL}/maquinas`, { headers: headersComAuth() });
+  return tratarResposta(resposta);
+}
+
+export async function criarMaquina(dados: NovaMaquina): Promise<Maquina> {
+  const resposta = await fetch(`${API_URL}/maquinas`, {
+    method: "POST",
+    headers: headersComAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify(dados),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function atualizarMaquina(id: string, dados: NovaMaquina): Promise<Maquina> {
+  const resposta = await fetch(`${API_URL}/maquinas/${id}`, {
+    method: "PUT",
+    headers: headersComAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify(dados),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function excluirMaquina(id: string): Promise<void> {
+  const resposta = await fetch(`${API_URL}/maquinas/${id}`, {
+    method: "DELETE",
+    headers: headersComAuth(),
+  });
   return tratarResposta(resposta);
 }
 

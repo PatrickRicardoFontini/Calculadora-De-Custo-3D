@@ -8,18 +8,36 @@ datasource db {
 }
 
 model Usuario {
-  id         String      @id @default(uuid())
-  email      String      @unique
-  senhaHash  String
-  nome       String
-  criadoEm   DateTime    @default(now())
+  id           String      @id @default(uuid())
+  email        String      @unique
+  senhaHash    String
+  nome         String
+  precoKwh     Decimal?    @db.Decimal(10, 4)
+  margemPadrao Decimal?    @db.Decimal(5, 2)
+  criadoEm     DateTime    @default(now())
 
   clientes   Cliente[]
   filamentos Filamento[]
   orcamentos Orcamento[]
   vendas     Venda[]
+  maquinas   Maquina[]
 
   @@map("usuarios")
+}
+
+model Maquina {
+  id             String      @id @default(uuid())
+  usuarioId      String
+  usuario        Usuario     @relation(fields: [usuarioId], references: [id])
+  nome           String
+  potenciaWatts  Decimal     @db.Decimal(10, 2)
+  precoCompra    Decimal     @db.Decimal(10, 2)
+  vidaUtilHoras  Decimal     @db.Decimal(10, 2)
+  criadoEm       DateTime    @default(now())
+
+  orcamentos     Orcamento[]
+
+  @@map("maquinas")
 }
 
 model Cliente {
@@ -68,6 +86,8 @@ model Orcamento {
   cliente        Cliente              @relation(fields: [clienteId], references: [id])
   filamentoId    String
   filamento      Filamento            @relation(fields: [filamentoId], references: [id])
+  maquinaId      String?
+  maquina        Maquina?             @relation(fields: [maquinaId], references: [id], onDelete: SetNull)
   pesoUsadoG     Decimal              @db.Decimal(10, 2)
   horasImpressao Decimal              @db.Decimal(10, 2)
   valorCalculado Decimal              @db.Decimal(10, 2)

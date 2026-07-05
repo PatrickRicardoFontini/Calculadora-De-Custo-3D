@@ -1,22 +1,25 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { calcularOrcamento, criarOrcamento, listarClientes, listarFilamentos } from "../api/client";
-import type { CalculoResultado, Cliente, Filamento } from "../types";
-
-const valoresIniciais = {
-  filamentoId: "",
-  pesoUsadoG: "",
-  horasImpressao: "",
-  custoEnergiaHora: "",
-  taxaDepreciacaoHora: "",
-  margemPercentual: "",
-};
+import { calcularOrcamento, criarOrcamento, listarClientes, listarFilamentos, listarMaquinas } from "../api/client";
+import type { CalculoResultado, Cliente, Filamento, Maquina, Usuario } from "../types";
 
 interface CalculadoraProps {
+  usuario: Usuario;
   aoSalvarOrcamento?: () => void;
 }
 
-export function Calculadora({ aoSalvarOrcamento }: CalculadoraProps) {
+export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
+  const valoresIniciais = {
+    filamentoId: "",
+    pesoUsadoG: "",
+    horasImpressao: "",
+    custoEnergiaHora: "",
+    taxaDepreciacaoHora: "",
+    margemPercentual: usuario.margemPadrao ?? "",
+  };
+
   const [filamentos, setFilamentos] = useState<Filamento[]>([]);
+  const [maquinas, setMaquinas] = useState<Maquina[]>([]);
+  const [maquinaId, setMaquinaId] = useState("");
   const [form, setForm] = useState(valoresIniciais);
   const [resultado, setResultado] = useState<CalculoResultado | null>(null);
   const [calculando, setCalculando] = useState(false);
@@ -41,6 +44,10 @@ export function Calculadora({ aoSalvarOrcamento }: CalculadoraProps) {
       })
       .catch((err) => setErro((err as Error).message));
 
+    listarMaquinas()
+      .then(setMaquinas)
+      .catch((err) => setErro((err as Error).message));
+
     listarClientes()
       .then((dados) => {
         setClientes(dados);
@@ -55,6 +62,23 @@ export function Calculadora({ aoSalvarOrcamento }: CalculadoraProps) {
 
   function atualizarCampo(campo: keyof typeof form, valor: string) {
     setForm((atual) => ({ ...atual, [campo]: valor }));
+  }
+
+  function selecionarMaquina(id: string) {
+    setMaquinaId(id);
+    if (!id) return;
+
+    const maquina = maquinas.find((m) => m.id === id);
+    if (!maquina) return;
+
+    const potenciaKw = parseFloat(maquina.potenciaWatts) / 1000;
+    const depreciacaoHora = parseFloat(maquina.precoCompra) / parseFloat(maquina.vidaUtilHoras);
+
+    setForm((atual) => ({
+      ...atual,
+      taxaDepreciacaoHora: depreciacaoHora.toFixed(4),
+      ...(usuario.precoKwh && { custoEnergiaHora: (potenciaKw * parseFloat(usuario.precoKwh)).toFixed(4) }),
+    }));
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -90,6 +114,7 @@ export function Calculadora({ aoSalvarOrcamento }: CalculadoraProps) {
       await criarOrcamento({
         ...(modoCliente === "existente" ? { clienteId } : { clienteNome: novoClienteNome, clienteWhatsapp: novoClienteWhatsapp }),
         filamentoId: form.filamentoId,
+        maquinaId: maquinaId || undefined,
         pesoUsadoG: Number(form.pesoUsadoG),
         horasImpressao: Number(form.horasImpressao),
         custoEnergiaHora: Number(form.custoEnergiaHora),
@@ -133,6 +158,17 @@ export function Calculadora({ aoSalvarOrcamento }: CalculadoraProps) {
             </select>
           </div>
           <div className="campo">
+            <label htmlFor="maquinaId">Máquina (opcional)</label>
+            <select id="maquinaId" value={maquinaId} onChange={(e) => selecionarMaquina(e.target.value)}>
+              <option value="">Nenhuma (preencher manualmente)</option>
+              {maquinas.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="campo">
             <label htmlFor="pesoUsadoG">Peso usado (g)</label>
             <input
               id="pesoUsadoG"
@@ -163,10 +199,13 @@ export function Calculadora({ aoSalvarOrcamento }: CalculadoraProps) {
               required
               type="number"
               min="0"
-              step="0.01"
+              step="any"
               value={form.custoEnergiaHora}
               onChange={(e) => atualizarCampo("custoEnergiaHora", e.target.value)}
             />
+            {maquinaId && !usuario.precoKwh && (
+              <span className="nota-campo">Configure o preço do kWh na aba Máquinas para preencher automaticamente.</span>
+            )}
           </div>
           <div className="campo">
             <label htmlFor="taxaDepreciacaoHora">Depreciação por hora (R$)</label>
@@ -175,7 +214,7 @@ export function Calculadora({ aoSalvarOrcamento }: CalculadoraProps) {
               required
               type="number"
               min="0"
-              step="0.01"
+              step="any"
               value={form.taxaDepreciacaoHora}
               onChange={(e) => atualizarCampo("taxaDepreciacaoHora", e.target.value)}
             />
@@ -187,7 +226,7 @@ export function Calculadora({ aoSalvarOrcamento }: CalculadoraProps) {
               required
               type="number"
               min="0"
-              step="1"
+              step="0.01"
               value={form.margemPercentual}
               onChange={(e) => atualizarCampo("margemPercentual", e.target.value)}
             />

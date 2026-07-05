@@ -1,5 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
+import type { Usuario } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { gerarToken } from "../lib/jwt";
 import { autenticacao } from "../middleware/autenticacao";
@@ -13,8 +14,14 @@ function pareceHashBcrypt(hash: string): boolean {
   return hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$");
 }
 
-function usuarioParaResposta(usuario: { id: string; nome: string; email: string }) {
-  return { id: usuario.id, nome: usuario.nome, email: usuario.email };
+function usuarioParaResposta(usuario: Usuario) {
+  return {
+    id: usuario.id,
+    nome: usuario.nome,
+    email: usuario.email,
+    precoKwh: usuario.precoKwh,
+    margemPadrao: usuario.margemPadrao,
+  };
 }
 
 // POST /auth/registro - cria uma conta nova, ou assume a conta do seed se ela ainda não tiver senha real
@@ -81,5 +88,31 @@ authRouter.get("/me", autenticacao, async (req, res) => {
   if (!usuario) {
     return res.status(401).json({ erro: "Não autenticado" });
   }
+  res.json(usuarioParaResposta(usuario));
+});
+
+// PUT /auth/configuracoes - atualiza preço do kWh e margem de lucro padrão da conta
+authRouter.put("/configuracoes", autenticacao, async (req, res) => {
+  const { precoKwh, margemPadrao } = req.body;
+
+  const erros: string[] = [];
+  if (precoKwh !== undefined && precoKwh !== null && precoKwh !== "" && Number.isNaN(Number(precoKwh))) {
+    erros.push("Campo numérico inválido: precoKwh");
+  }
+  if (margemPadrao !== undefined && margemPadrao !== null && margemPadrao !== "" && Number.isNaN(Number(margemPadrao))) {
+    erros.push("Campo numérico inválido: margemPadrao");
+  }
+  if (erros.length > 0) {
+    return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
+  }
+
+  const usuario = await prisma.usuario.update({
+    where: { id: req.usuarioId },
+    data: {
+      ...(precoKwh !== undefined && { precoKwh: precoKwh === "" ? null : Number(precoKwh) }),
+      ...(margemPadrao !== undefined && { margemPadrao: margemPadrao === "" ? null : Number(margemPadrao) }),
+    },
+  });
+
   res.json(usuarioParaResposta(usuario));
 });
