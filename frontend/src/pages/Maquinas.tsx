@@ -33,6 +33,7 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
 
   const [precoKwhInput, setPrecoKwhInput] = useState(usuario.precoKwh ?? "");
   const [margemPadraoInput, setMargemPadraoInput] = useState(usuario.margemPadrao ?? "");
+  const [margemExtrasPadraoInput, setMargemExtrasPadraoInput] = useState(usuario.margemExtrasPadrao ?? "");
   const [enviandoConfig, setEnviandoConfig] = useState(false);
   const [erroConfig, setErroConfig] = useState<string | null>(null);
   const [sucessoConfig, setSucessoConfig] = useState(false);
@@ -40,6 +41,7 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
   useEffect(() => {
     setPrecoKwhInput(usuario.precoKwh ?? "");
     setMargemPadraoInput(usuario.margemPadrao ?? "");
+    setMargemExtrasPadraoInput(usuario.margemExtrasPadrao ?? "");
   }, [usuario]);
 
   async function carregar() {
@@ -135,7 +137,8 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
     try {
       const atualizado = await atualizarConfiguracoes(
         precoKwhInput === "" ? null : Number(precoKwhInput),
-        margemPadraoInput === "" ? null : Number(margemPadraoInput)
+        margemPadraoInput === "" ? null : Number(margemPadraoInput),
+        margemExtrasPadraoInput === "" ? null : Number(margemExtrasPadraoInput)
       );
       aoAtualizarUsuario(atualizado);
       setSucessoConfig(true);
@@ -172,6 +175,17 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
             step="0.01"
             value={margemPadraoInput}
             onChange={(e) => setMargemPadraoInput(e.target.value)}
+          />
+        </div>
+        <div className="campo">
+          <label htmlFor="margemExtrasPadrao">Margem padrão de custos extras (%)</label>
+          <input
+            id="margemExtrasPadrao"
+            type="number"
+            min="0"
+            step="0.01"
+            value={margemExtrasPadraoInput}
+            onChange={(e) => setMargemExtrasPadraoInput(e.target.value)}
           />
         </div>
         <button type="submit" disabled={enviandoConfig}>

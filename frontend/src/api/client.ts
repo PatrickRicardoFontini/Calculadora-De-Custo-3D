@@ -69,12 +69,13 @@ export async function buscarUsuarioAtual(): Promise<Usuario> {
 
 export async function atualizarConfiguracoes(
   precoKwh: number | null,
-  margemPadrao: number | null
+  margemPadrao: number | null,
+  margemExtrasPadrao: number | null
 ): Promise<Usuario> {
   const resposta = await fetch(`${API_URL}/auth/configuracoes`, {
     method: "PUT",
     headers: headersComAuth({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ precoKwh, margemPadrao }),
+    body: JSON.stringify({ precoKwh, margemPadrao, margemExtrasPadrao }),
   });
   return tratarResposta(resposta);
 }
@@ -192,6 +193,23 @@ export async function atualizarStatusOrcamento(
     method: "PUT",
     headers: headersComAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify({ status }),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function adicionarExtra(orcamentoId: string, descricao: string, valorCusto: number): Promise<Orcamento> {
+  const resposta = await fetch(`${API_URL}/orcamentos/${orcamentoId}/extras`, {
+    method: "POST",
+    headers: headersComAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ descricao, valorCusto }),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function removerExtra(orcamentoId: string, extraId: string): Promise<Orcamento> {
+  const resposta = await fetch(`${API_URL}/orcamentos/${orcamentoId}/extras/${extraId}`, {
+    method: "DELETE",
+    headers: headersComAuth(),
   });
   return tratarResposta(resposta);
 }

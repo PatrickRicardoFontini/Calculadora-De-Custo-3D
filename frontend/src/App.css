@@ -558,3 +558,28 @@ button.botao-whatsapp:disabled {
   background: #f0f4ff;
   border-color: var(--accent-border);
 }
+
+.lista-extras {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.lista-extras li {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.secao-extras {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+.secao-extras h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}

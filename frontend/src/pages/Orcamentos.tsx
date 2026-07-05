@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { atualizarStatusOrcamento, atualizarValorOrcamento, buscarOrcamento, listarOrcamentos } from "../api/client";
+import {
+  adicionarExtra,
+  atualizarStatusOrcamento,
+  atualizarValorOrcamento,
+  buscarOrcamento,
+  listarOrcamentos,
+  removerExtra,
+} from "../api/client";
 import type { Orcamento, StatusOrcamento } from "../types";
 import { montarLinkWhatsapp } from "../lib/whatsapp";
 
@@ -22,6 +29,9 @@ export function Orcamentos() {
   const [valorEditado, setValorEditado] = useState("");
   const [processandoId, setProcessandoId] = useState<string | null>(null);
   const [avisoEstoqueBaixoId, setAvisoEstoqueBaixoId] = useState<string | null>(null);
+
+  const [novaExtraDescricao, setNovaExtraDescricao] = useState("");
+  const [novaExtraValor, setNovaExtraValor] = useState("");
 
   async function carregar() {
     setCarregando(true);
@@ -88,6 +98,8 @@ export function Orcamentos() {
       return;
     }
     setExpandidoId(orcamento.id);
+    setNovaExtraDescricao("");
+    setNovaExtraValor("");
     if (!orcamento.historico) {
       try {
         const completo = await buscarOrcamento(orcamento.id);
@@ -95,6 +107,39 @@ export function Orcamentos() {
       } catch (err) {
         setErro((err as Error).message);
       }
+    }
+  }
+
+  async function adicionarExtraOrcamento(orcamentoId: string) {
+    const valor = Number(novaExtraValor);
+    if (!novaExtraDescricao.trim() || Number.isNaN(valor) || valor <= 0) {
+      setErro("Preencha descrição e valor do custo extra corretamente");
+      return;
+    }
+    setProcessandoId(orcamentoId);
+    setErro(null);
+    try {
+      const atualizado = await adicionarExtra(orcamentoId, novaExtraDescricao.trim(), valor);
+      setOrcamentos((atual) => atual.map((o) => (o.id === atualizado.id ? atualizado : o)));
+      setNovaExtraDescricao("");
+      setNovaExtraValor("");
+    } catch (err) {
+      setErro((err as Error).message);
+    } finally {
+      setProcessandoId(null);
+    }
+  }
+
+  async function removerExtraOrcamento(orcamentoId: string, extraId: string) {
+    setProcessandoId(orcamentoId);
+    setErro(null);
+    try {
+      const atualizado = await removerExtra(orcamentoId, extraId);
+      setOrcamentos((atual) => atual.map((o) => (o.id === atualizado.id ? atualizado : o)));
+    } catch (err) {
+      setErro((err as Error).message);
+    } finally {
+      setProcessandoId(null);
     }
   }
 
@@ -202,6 +247,56 @@ export function Orcamentos() {
                     <p className="aviso-estoque-baixo">
                       Aceito, mas o estoque de {orcamento.filamento.tipo} {orcamento.filamento.cor} está baixo agora.
                     </p>
+                  )}
+
+                  {expandidoId === orcamento.id && (
+                    <div className="secao-extras">
+                      <h4>Custos extras</h4>
+                      {orcamento.extras.length > 0 ? (
+                        <ul className="lista-extras">
+                          {orcamento.extras.map((ex) => (
+                            <li key={ex.id}>
+                              {ex.descricao} — R$ {parseFloat(ex.valorCusto).toFixed(2)}
+                              {orcamento.status === "PENDENTE" && (
+                                <button
+                                  className="botao-perigo"
+                                  disabled={processando}
+                                  onClick={() => removerExtraOrcamento(orcamento.id, ex.id)}
+                                >
+                                  Remover
+                                </button>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="detalhe-secundario">Nenhum custo extra neste orçamento.</p>
+                      )}
+                      {orcamento.status === "PENDENTE" && (
+                        <div className="painel-inline">
+                          <input
+                            placeholder="Descrição"
+                            value={novaExtraDescricao}
+                            onChange={(e) => setNovaExtraDescricao(e.target.value)}
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="Valor (R$)"
+                            value={novaExtraValor}
+                            onChange={(e) => setNovaExtraValor(e.target.value)}
+                          />
+                          <button
+                            className="botao-secundario"
+                            disabled={processando}
+                            onClick={() => adicionarExtraOrcamento(orcamento.id)}
+                          >
+                            Adicionar
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {expandidoId === orcamento.id && orcamento.historico && (

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { calcularOrcamento, criarOrcamento, listarClientes, listarFilamentos, listarMaquinas } from "../api/client";
-import type { CalculoResultado, Cliente, Filamento, Maquina, Usuario } from "../types";
+import type { CalculoResultado, Cliente, Filamento, Maquina, NovoExtra, Usuario } from "../types";
 
 interface CalculadoraProps {
   usuario: Usuario;
@@ -33,6 +33,11 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
   const [salvando, setSalvando] = useState(false);
   const [erroSalvar, setErroSalvar] = useState<string | null>(null);
   const [orcamentoSalvo, setOrcamentoSalvo] = useState(false);
+
+  const [extras, setExtras] = useState<NovoExtra[]>([]);
+  const [novoExtraDescricao, setNovoExtraDescricao] = useState("");
+  const [novoExtraValor, setNovoExtraValor] = useState("");
+  const [margemExtrasInput, setMargemExtrasInput] = useState(usuario.margemExtrasPadrao ?? "");
 
   useEffect(() => {
     listarFilamentos()
@@ -81,6 +86,22 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
     }));
   }
 
+  function adicionarExtraLocal() {
+    const valor = Number(novoExtraValor);
+    if (!novoExtraDescricao.trim() || Number.isNaN(valor) || valor <= 0) return;
+    setExtras((atual) => [...atual, { descricao: novoExtraDescricao.trim(), valorCusto: valor }]);
+    setNovoExtraDescricao("");
+    setNovoExtraValor("");
+  }
+
+  function removerExtraLocal(indice: number) {
+    setExtras((atual) => atual.filter((_, i) => i !== indice));
+  }
+
+  const custoTotalExtras = extras.reduce((soma, e) => soma + e.valorCusto, 0);
+  const margemExtrasNum = Number(margemExtrasInput) || 0;
+  const valorExtrasComMargem = custoTotalExtras * (1 + margemExtrasNum / 100);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setCalculando(true);
@@ -120,10 +141,13 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
         custoEnergiaHora: Number(form.custoEnergiaHora),
         taxaDepreciacaoHora: Number(form.taxaDepreciacaoHora),
         margemPercentual: Number(form.margemPercentual),
+        extras: extras.length > 0 ? extras : undefined,
+        margemExtras: margemExtrasInput !== "" ? Number(margemExtrasInput) : undefined,
       });
       setOrcamentoSalvo(true);
       setNovoClienteNome("");
       setNovoClienteWhatsapp("");
+      setExtras([]);
       aoSalvarOrcamento?.();
     } catch (err) {
       setErroSalvar((err as Error).message);
@@ -324,6 +348,60 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
                     />
                   </div>
                 </>
+              )}
+
+              <div className="campo">
+                <label>Custos extras (opcional)</label>
+                {extras.length > 0 && (
+                  <ul className="lista-extras">
+                    {extras.map((item, indice) => (
+                      <li key={indice}>
+                        {item.descricao} — R$ {item.valorCusto.toFixed(2)}
+                        <button type="button" className="botao-perigo" onClick={() => removerExtraLocal(indice)}>
+                          Remover
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="painel-inline">
+                  <input
+                    placeholder="Descrição (ex: argola de chaveiro)"
+                    value={novoExtraDescricao}
+                    onChange={(e) => setNovoExtraDescricao(e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Valor (R$)"
+                    value={novoExtraValor}
+                    onChange={(e) => setNovoExtraValor(e.target.value)}
+                  />
+                  <button type="button" className="botao-secundario" onClick={adicionarExtraLocal}>
+                    Adicionar
+                  </button>
+                </div>
+              </div>
+
+              <div className="campo">
+                <label htmlFor="margemExtras">Margem para os extras (%)</label>
+                <input
+                  id="margemExtras"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={margemExtrasInput}
+                  onChange={(e) => setMargemExtrasInput(e.target.value)}
+                />
+              </div>
+
+              {extras.length > 0 && (
+                <p className="detalhe-secundario">
+                  Custo dos extras: R$ {custoTotalExtras.toFixed(2)} · Com margem ({margemExtrasNum}%): R${" "}
+                  {valorExtrasComMargem.toFixed(2)} · Valor final com extras: R${" "}
+                  {(resultado.detalhamento.valorFinal + valorExtrasComMargem).toFixed(2)}
+                </p>
               )}
 
               <button type="submit" disabled={salvando}>

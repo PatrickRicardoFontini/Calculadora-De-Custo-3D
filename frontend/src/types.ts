@@ -4,6 +4,7 @@ export interface Usuario {
   email: string;
   precoKwh: string | null;
   margemPadrao: string | null;
+  margemExtrasPadrao: string | null;
 }
 
 export interface RespostaAuth {
@@ -77,6 +78,10 @@ export interface CalculoResultado {
     custoDepreciacao: number;
     subtotal: number;
     margemPercentual: number;
+    valorPrincipal: number;
+    custoTotalExtras: number;
+    margemExtras: number;
+    valorExtrasComMargem: number;
     valorFinal: number;
   };
 }
@@ -101,6 +106,18 @@ export interface OrcamentoHistoricoItem {
   registradoEm: string;
 }
 
+export interface OrcamentoExtraItem {
+  id: string;
+  orcamentoId: string;
+  descricao: string;
+  valorCusto: string;
+}
+
+export interface NovoExtra {
+  descricao: string;
+  valorCusto: number;
+}
+
 export interface Orcamento {
   id: string;
   clienteId: string;
@@ -110,11 +127,13 @@ export interface Orcamento {
   horasImpressao: string;
   valorCalculado: string;
   valorAtual: string;
+  margemExtras: string | null;
   status: StatusOrcamento;
   criadoEm: string;
   cliente: Cliente;
   filamento: Filamento;
   maquina: Maquina | null;
+  extras: OrcamentoExtraItem[];
   historico?: OrcamentoHistoricoItem[];
 }
 
@@ -129,6 +148,8 @@ export interface NovoOrcamento {
   custoEnergiaHora: number;
   taxaDepreciacaoHora: number;
   margemPercentual: number;
+  extras?: NovoExtra[];
+  margemExtras?: number;
 }
 
 export interface OrcamentoComEstoque extends Orcamento {

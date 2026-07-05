@@ -1,4 +1,4 @@
-import type { Filamento, Maquina } from "@prisma/client";
+import type { Filamento, Maquina, Prisma } from "@prisma/client";
 import { decimalToNumber } from "./decimal";
 
 export interface EntradaCalculo {
@@ -16,6 +16,10 @@ export interface DetalhamentoCalculo {
   custoDepreciacao: number;
   subtotal: number;
   margemPercentual: number;
+  valorPrincipal: number;
+  custoTotalExtras: number;
+  margemExtras: number;
+  valorExtrasComMargem: number;
   valorFinal: number;
 }
 
@@ -24,7 +28,23 @@ export function arredondar(valor: number, casas = 2): number {
   return Math.round((valor + Number.EPSILON) * fator) / fator;
 }
 
-export function calcularCusto(filamento: Filamento, entrada: EntradaCalculo): DetalhamentoCalculo {
+// Soma o custo bruto de uma lista de itens extras (aceita valores já numéricos ou Decimal do Prisma)
+export function somarCustoExtras(extras: { valorCusto: Prisma.Decimal | number | string }[]): number {
+  return extras.reduce((soma, extra) => soma + decimalToNumber(extra.valorCusto), 0);
+}
+
+// Margem dos extras é separada da margem principal: um item revendido não carrega o
+// mesmo markup do filamento/máquina
+export function calcularValorExtrasComMargem(custoTotalExtras: number, margemExtras: number): number {
+  return arredondar(custoTotalExtras * (1 + margemExtras / 100));
+}
+
+export function calcularCusto(
+  filamento: Filamento,
+  entrada: EntradaCalculo,
+  custoTotalExtras = 0,
+  margemExtras = 0
+): DetalhamentoCalculo {
   if (filamento.precoPorGrama === null) {
     throw new Error("Filamento sem precoPorGrama definido");
   }
@@ -34,7 +54,9 @@ export function calcularCusto(filamento: Filamento, entrada: EntradaCalculo): De
   const custoEnergia = entrada.custoEnergiaHora * entrada.horasImpressao;
   const custoDepreciacao = entrada.taxaDepreciacaoHora * entrada.horasImpressao;
   const subtotal = custoFilamento + custoEnergia + custoDepreciacao;
-  const valorFinal = subtotal * (1 + entrada.margemPercentual / 100);
+  const valorPrincipal = subtotal * (1 + entrada.margemPercentual / 100);
+  const valorExtrasComMargem = calcularValorExtrasComMargem(custoTotalExtras, margemExtras);
+  const valorFinal = valorPrincipal + valorExtrasComMargem;
 
   return {
     precoPorGrama: arredondar(precoPorGrama, 4),
@@ -43,6 +65,10 @@ export function calcularCusto(filamento: Filamento, entrada: EntradaCalculo): De
     custoDepreciacao: arredondar(custoDepreciacao),
     subtotal: arredondar(subtotal),
     margemPercentual: entrada.margemPercentual,
+    valorPrincipal: arredondar(valorPrincipal),
+    custoTotalExtras: arredondar(custoTotalExtras),
+    margemExtras,
+    valorExtrasComMargem,
     valorFinal: arredondar(valorFinal),
   };
 }

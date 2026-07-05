@@ -8,13 +8,14 @@ datasource db {
 }
 
 model Usuario {
-  id           String      @id @default(uuid())
-  email        String      @unique
-  senhaHash    String
-  nome         String
-  precoKwh     Decimal?    @db.Decimal(10, 4)
-  margemPadrao Decimal?    @db.Decimal(5, 2)
-  criadoEm     DateTime    @default(now())
+  id                 String      @id @default(uuid())
+  email              String      @unique
+  senhaHash          String
+  nome               String
+  precoKwh           Decimal?    @db.Decimal(10, 4)
+  margemPadrao       Decimal?    @db.Decimal(5, 2)
+  margemExtrasPadrao Decimal?    @db.Decimal(5, 2)
+  criadoEm           DateTime    @default(now())
 
   clientes   Cliente[]
   filamentos Filamento[]
@@ -92,13 +93,25 @@ model Orcamento {
   horasImpressao Decimal              @db.Decimal(10, 2)
   valorCalculado Decimal              @db.Decimal(10, 2)
   valorAtual     Decimal              @db.Decimal(10, 2)
+  margemExtras   Decimal?             @db.Decimal(5, 2)
   status         StatusOrcamento      @default(PENDENTE)
   criadoEm       DateTime             @default(now())
 
   historico      OrcamentoHistorico[]
+  extras         OrcamentoExtra[]
   venda          Venda?
 
   @@map("orcamentos")
+}
+
+model OrcamentoExtra {
+  id          String    @id @default(uuid())
+  orcamentoId String
+  orcamento   Orcamento @relation(fields: [orcamentoId], references: [id])
+  descricao   String
+  valorCusto  Decimal   @db.Decimal(10, 2)
+
+  @@map("orcamento_extras")
 }
 
 model OrcamentoHistorico {

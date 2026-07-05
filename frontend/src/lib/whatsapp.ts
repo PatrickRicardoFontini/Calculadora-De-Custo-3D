@@ -16,13 +16,15 @@ export function montarMensagemOrcamento(orcamento: Orcamento): string {
   const valor = parseFloat(orcamento.valorAtual).toFixed(2);
   const peso = parseFloat(orcamento.pesoUsadoG).toFixed(0);
   const horas = parseFloat(orcamento.horasImpressao).toFixed(1);
+  const linhaExtras =
+    orcamento.extras.length > 0 ? `\nInclui: ${orcamento.extras.map((e) => e.descricao).join(", ")}\n` : "";
 
   return `Olá, ${orcamento.cliente.nome}! Aqui está o orçamento da sua peça:
 
 Material: ${orcamento.filamento.tipo} ${orcamento.filamento.cor}
 Peso: ${peso}g
 Tempo de impressão: ${horas}h
-
+${linhaExtras}
 Valor: R$ ${valor}
 
 Qualquer dúvida, é só chamar!`;

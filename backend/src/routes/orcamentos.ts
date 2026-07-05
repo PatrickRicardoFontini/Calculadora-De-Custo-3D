@@ -1,6 +1,13 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
-import { calcularCusto, calcularCustoEnergiaHora, calcularTaxaDepreciacaoHora } from "../lib/calculo";
+import {
+  arredondar,
+  calcularCusto,
+  calcularCustoEnergiaHora,
+  calcularTaxaDepreciacaoHora,
+  calcularValorExtrasComMargem,
+  somarCustoExtras,
+} from "../lib/calculo";
 import { decimalToNumber } from "../lib/decimal";
 import type { StatusOrcamento } from "@prisma/client";
 
@@ -12,6 +19,12 @@ const INCLUDE_PADRAO = {
   cliente: true,
   filamento: true,
   maquina: true,
+  extras: true,
+} as const;
+
+const INCLUDE_DETALHE = {
+  ...INCLUDE_PADRAO,
+  historico: { orderBy: { registradoEm: "asc" } },
 } as const;
 
 // GET /orcamentos - lista orçamentos do usuário, com filtro opcional por status
@@ -38,10 +51,7 @@ orcamentosRouter.get("/", async (req, res) => {
 orcamentosRouter.get("/:id", async (req, res) => {
   const orcamento = await prisma.orcamento.findFirst({
     where: { id: req.params.id, usuarioId: req.usuarioId },
-    include: {
-      ...INCLUDE_PADRAO,
-      historico: { orderBy: { registradoEm: "asc" } },
-    },
+    include: INCLUDE_DETALHE,
   });
 
   if (!orcamento) {
@@ -64,6 +74,8 @@ orcamentosRouter.post("/", async (req, res) => {
     custoEnergiaHora,
     taxaDepreciacaoHora,
     margemPercentual,
+    extras,
+    margemExtras,
   } = req.body;
 
   const erros: string[] = [];
@@ -91,6 +103,39 @@ orcamentosRouter.post("/", async (req, res) => {
       erros.push(`Campo numérico inválido: ${campo}`);
     }
   }
+
+  const extrasInput: { descricao: string; valorCusto: number }[] = [];
+  if (extras !== undefined && !Array.isArray(extras)) {
+    erros.push("Campo 'extras' deve ser uma lista");
+  } else if (Array.isArray(extras)) {
+    extras.forEach((item, indice) => {
+      const descricaoItem = item?.descricao;
+      const valorCustoItem = item?.valorCusto;
+      if (typeof descricaoItem !== "string" || !descricaoItem.trim()) {
+        erros.push(`extras[${indice}].descricao é obrigatório`);
+      }
+      if (
+        valorCustoItem === undefined ||
+        valorCustoItem === null ||
+        valorCustoItem === "" ||
+        Number.isNaN(Number(valorCustoItem)) ||
+        Number(valorCustoItem) <= 0
+      ) {
+        erros.push(`extras[${indice}].valorCusto inválido`);
+      } else {
+        extrasInput.push({ descricao: String(descricaoItem).trim(), valorCusto: Number(valorCustoItem) });
+      }
+    });
+  }
+  if (
+    margemExtras !== undefined &&
+    margemExtras !== null &&
+    margemExtras !== "" &&
+    (Number.isNaN(Number(margemExtras)) || Number(margemExtras) < 0)
+  ) {
+    erros.push("Campo numérico inválido: margemExtras");
+  }
+
   if (erros.length > 0) {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
   }
@@ -114,6 +159,8 @@ orcamentosRouter.post("/", async (req, res) => {
     }
   }
 
+  const usuario = await prisma.usuario.findUnique({ where: { id: req.usuarioId } });
+
   let custoEnergiaHoraFinal: number;
   let taxaDepreciacaoHoraFinal: number;
 
@@ -128,7 +175,6 @@ orcamentosRouter.post("/", async (req, res) => {
     if (custoEnergiaHora !== undefined && custoEnergiaHora !== null && custoEnergiaHora !== "") {
       custoEnergiaHoraFinal = Number(custoEnergiaHora);
     } else {
-      const usuario = await prisma.usuario.findUnique({ where: { id: req.usuarioId } });
       if (!usuario?.precoKwh) {
         return res.status(400).json({
           erro: "Configure o preço do kWh na aba Máquinas antes de calcular automaticamente, ou informe custoEnergiaHora manualmente.",
@@ -154,7 +200,15 @@ orcamentosRouter.post("/", async (req, res) => {
     margemPercentual: Number(margemPercentual),
   };
 
-  const { valorFinal } = calcularCusto(filamento, entrada);
+  const margemExtrasFinal =
+    margemExtras !== undefined && margemExtras !== null && margemExtras !== ""
+      ? Number(margemExtras)
+      : usuario?.margemExtrasPadrao !== null && usuario?.margemExtrasPadrao !== undefined
+        ? decimalToNumber(usuario.margemExtrasPadrao)
+        : 0;
+
+  const custoTotalExtras = somarCustoExtras(extrasInput);
+  const { valorFinal } = calcularCusto(filamento, entrada, custoTotalExtras, margemExtrasFinal);
 
   const orcamento = await prisma.$transaction(async (tx) => {
     const clienteIdFinal = clienteId
@@ -179,8 +233,19 @@ orcamentosRouter.post("/", async (req, res) => {
         horasImpressao: entrada.horasImpressao,
         valorCalculado: valorFinal,
         valorAtual: valorFinal,
+        margemExtras: margemExtrasFinal,
       },
     });
+
+    if (extrasInput.length > 0) {
+      await tx.orcamentoExtra.createMany({
+        data: extrasInput.map((item) => ({
+          orcamentoId: novoOrcamento.id,
+          descricao: item.descricao,
+          valorCusto: item.valorCusto,
+        })),
+      });
+    }
 
     await tx.orcamentoHistorico.create({
       data: {
@@ -198,6 +263,114 @@ orcamentosRouter.post("/", async (req, res) => {
   });
 
   res.status(201).json(orcamentoCompleto);
+});
+
+// POST /orcamentos/:id/extras - adiciona um item extra a um orçamento pendente e recalcula o valor
+orcamentosRouter.post("/:id/extras", async (req, res) => {
+  const { descricao, valorCusto } = req.body;
+
+  if (typeof descricao !== "string" || !descricao.trim()) {
+    return res.status(400).json({ erro: "Campo obrigatório ausente: descricao" });
+  }
+  if (
+    valorCusto === undefined ||
+    valorCusto === null ||
+    valorCusto === "" ||
+    Number.isNaN(Number(valorCusto)) ||
+    Number(valorCusto) <= 0
+  ) {
+    return res.status(400).json({ erro: "Campo 'valorCusto' inválido" });
+  }
+
+  const orcamento = await prisma.orcamento.findFirst({
+    where: { id: req.params.id, usuarioId: req.usuarioId },
+    include: { extras: true },
+  });
+  if (!orcamento) {
+    return res.status(404).json({ erro: "Orçamento não encontrado" });
+  }
+  if (orcamento.status !== "PENDENTE") {
+    return res.status(400).json({ erro: "Só é possível adicionar custos extras a orçamentos pendentes" });
+  }
+
+  const margem = orcamento.margemExtras !== null ? decimalToNumber(orcamento.margemExtras) : 0;
+  const valorExtrasAntes = calcularValorExtrasComMargem(somarCustoExtras(orcamento.extras), margem);
+  const valorPrincipal = decimalToNumber(orcamento.valorCalculado) - valorExtrasAntes;
+  const custoTotalExtrasDepois = somarCustoExtras(orcamento.extras) + Number(valorCusto);
+  const valorExtrasDepois = calcularValorExtrasComMargem(custoTotalExtrasDepois, margem);
+  const novoValor = arredondar(valorPrincipal + valorExtrasDepois);
+
+  const orcamentoAtualizado = await prisma.$transaction(async (tx) => {
+    await tx.orcamentoExtra.create({
+      data: { orcamentoId: orcamento.id, descricao: descricao.trim(), valorCusto: Number(valorCusto) },
+    });
+
+    const atualizado = await tx.orcamento.update({
+      where: { id: orcamento.id },
+      data: { valorCalculado: novoValor, valorAtual: novoValor },
+    });
+
+    await tx.orcamentoHistorico.create({
+      data: { orcamentoId: orcamento.id, valor: novoValor },
+    });
+
+    return atualizado;
+  });
+
+  const orcamentoCompleto = await prisma.orcamento.findFirst({
+    where: { id: orcamentoAtualizado.id },
+    include: INCLUDE_DETALHE,
+  });
+
+  res.status(201).json(orcamentoCompleto);
+});
+
+// DELETE /orcamentos/:id/extras/:extraId - remove um item extra de um orçamento pendente e recalcula o valor
+orcamentosRouter.delete("/:id/extras/:extraId", async (req, res) => {
+  const orcamento = await prisma.orcamento.findFirst({
+    where: { id: req.params.id, usuarioId: req.usuarioId },
+    include: { extras: true },
+  });
+  if (!orcamento) {
+    return res.status(404).json({ erro: "Orçamento não encontrado" });
+  }
+  if (orcamento.status !== "PENDENTE") {
+    return res.status(400).json({ erro: "Só é possível remover custos extras de orçamentos pendentes" });
+  }
+
+  const extra = orcamento.extras.find((item) => item.id === req.params.extraId);
+  if (!extra) {
+    return res.status(404).json({ erro: "Item extra não encontrado" });
+  }
+
+  const margem = orcamento.margemExtras !== null ? decimalToNumber(orcamento.margemExtras) : 0;
+  const valorExtrasAntes = calcularValorExtrasComMargem(somarCustoExtras(orcamento.extras), margem);
+  const valorPrincipal = decimalToNumber(orcamento.valorCalculado) - valorExtrasAntes;
+  const extrasRestantes = orcamento.extras.filter((item) => item.id !== extra.id);
+  const valorExtrasDepois = calcularValorExtrasComMargem(somarCustoExtras(extrasRestantes), margem);
+  const novoValor = arredondar(valorPrincipal + valorExtrasDepois);
+
+  const orcamentoAtualizado = await prisma.$transaction(async (tx) => {
+    await tx.orcamentoExtra.delete({ where: { id: extra.id } });
+
+    const atualizado = await tx.orcamento.update({
+      where: { id: orcamento.id },
+      data: { valorCalculado: novoValor, valorAtual: novoValor },
+    });
+
+    await tx.orcamentoHistorico.create({
+      data: { orcamentoId: orcamento.id, valor: novoValor },
+    });
+
+    return atualizado;
+  });
+
+  const orcamentoCompleto = await prisma.orcamento.findFirst({
+    where: { id: orcamentoAtualizado.id },
+    include: INCLUDE_DETALHE,
+  });
+
+  res.json(orcamentoCompleto);
 });
 
 // PUT /orcamentos/:id/valor - negocia o valor do orçamento enquanto PENDENTE
@@ -235,10 +408,7 @@ orcamentosRouter.put("/:id/valor", async (req, res) => {
 
   const orcamentoCompleto = await prisma.orcamento.findFirst({
     where: { id: orcamentoAtualizado.id },
-    include: {
-      ...INCLUDE_PADRAO,
-      historico: { orderBy: { registradoEm: "asc" } },
-    },
+    include: INCLUDE_DETALHE,
   });
 
   res.json(orcamentoCompleto);

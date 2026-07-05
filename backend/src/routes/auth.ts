@@ -21,6 +21,7 @@ function usuarioParaResposta(usuario: Usuario) {
     email: usuario.email,
     precoKwh: usuario.precoKwh,
     margemPadrao: usuario.margemPadrao,
+    margemExtrasPadrao: usuario.margemExtrasPadrao,
   };
 }
 
@@ -91,9 +92,9 @@ authRouter.get("/me", autenticacao, async (req, res) => {
   res.json(usuarioParaResposta(usuario));
 });
 
-// PUT /auth/configuracoes - atualiza preço do kWh e margem de lucro padrão da conta
+// PUT /auth/configuracoes - atualiza preço do kWh e margens padrão da conta
 authRouter.put("/configuracoes", autenticacao, async (req, res) => {
-  const { precoKwh, margemPadrao } = req.body;
+  const { precoKwh, margemPadrao, margemExtrasPadrao } = req.body;
 
   const erros: string[] = [];
   if (precoKwh !== undefined && precoKwh !== null && precoKwh !== "" && Number.isNaN(Number(precoKwh))) {
@@ -102,6 +103,14 @@ authRouter.put("/configuracoes", autenticacao, async (req, res) => {
   if (margemPadrao !== undefined && margemPadrao !== null && margemPadrao !== "" && Number.isNaN(Number(margemPadrao))) {
     erros.push("Campo numérico inválido: margemPadrao");
   }
+  if (
+    margemExtrasPadrao !== undefined &&
+    margemExtrasPadrao !== null &&
+    margemExtrasPadrao !== "" &&
+    Number.isNaN(Number(margemExtrasPadrao))
+  ) {
+    erros.push("Campo numérico inválido: margemExtrasPadrao");
+  }
   if (erros.length > 0) {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
   }
@@ -109,8 +118,15 @@ authRouter.put("/configuracoes", autenticacao, async (req, res) => {
   const usuario = await prisma.usuario.update({
     where: { id: req.usuarioId },
     data: {
-      ...(precoKwh !== undefined && { precoKwh: precoKwh === "" ? null : Number(precoKwh) }),
-      ...(margemPadrao !== undefined && { margemPadrao: margemPadrao === "" ? null : Number(margemPadrao) }),
+      ...(precoKwh !== undefined && {
+        precoKwh: precoKwh === "" || precoKwh === null ? null : Number(precoKwh),
+      }),
+      ...(margemPadrao !== undefined && {
+        margemPadrao: margemPadrao === "" || margemPadrao === null ? null : Number(margemPadrao),
+      }),
+      ...(margemExtrasPadrao !== undefined && {
+        margemExtrasPadrao: margemExtrasPadrao === "" || margemExtrasPadrao === null ? null : Number(margemExtrasPadrao),
+      }),
     },
   });
 
