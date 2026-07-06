@@ -52,6 +52,31 @@
     color var(--transition-smooth);
 }
 
+/* Barra de rolagem com as cores do tema, global — Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--surface);
+}
+
+/* Chrome, Safari, Edge */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
 html,
 body {
   margin: 0;

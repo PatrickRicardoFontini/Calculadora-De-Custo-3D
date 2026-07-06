@@ -176,38 +176,40 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
       <h1>Máquinas</h1>
 
       <form className="formulario formulario-config" onSubmit={handleSalvarConfig}>
-        <div className="campo">
-          <label htmlFor="precoKwh">Preço do kWh(R$)</label>
-          <input
-            id="precoKwh"
-            type="number"
-            min="0"
-            step="0.0001"
-            value={precoKwhInput}
-            onChange={(e) => setPrecoKwhInput(e.target.value)}
-          />
-        </div>
-        <div className="campo">
-          <label htmlFor="margemPadrao">Margem de lucro padrão(%)</label>
-          <input
-            id="margemPadrao"
-            type="number"
-            min="0"
-            step="0.01"
-            value={margemPadraoInput}
-            onChange={(e) => setMargemPadraoInput(e.target.value)}
-          />
-        </div>
-        <div className="campo">
-          <label htmlFor="margemExtrasPadrao">Margem padrão de custos extras(%)</label>
-          <input
-            id="margemExtrasPadrao"
-            type="number"
-            min="0"
-            step="0.01"
-            value={margemExtrasPadraoInput}
-            onChange={(e) => setMargemExtrasPadraoInput(e.target.value)}
-          />
+        <div className="grupo-config">
+          <div className="campo">
+            <label htmlFor="precoKwh">Preço do kWh(R$)</label>
+            <input
+              id="precoKwh"
+              type="number"
+              min="0"
+              step="0.0001"
+              value={precoKwhInput}
+              onChange={(e) => setPrecoKwhInput(e.target.value)}
+            />
+          </div>
+          <div className="campo">
+            <label htmlFor="margemPadrao">Margem de lucro padrão(%)</label>
+            <input
+              id="margemPadrao"
+              type="number"
+              min="0"
+              step="0.01"
+              value={margemPadraoInput}
+              onChange={(e) => setMargemPadraoInput(e.target.value)}
+            />
+          </div>
+          <div className="campo">
+            <label htmlFor="margemExtrasPadrao">Margem de extras(%)</label>
+            <input
+              id="margemExtrasPadrao"
+              type="number"
+              min="0"
+              step="0.01"
+              value={margemExtrasPadraoInput}
+              onChange={(e) => setMargemExtrasPadraoInput(e.target.value)}
+            />
+          </div>
         </div>
         <div className="campo campo-largura-total">
           <label htmlFor="templateWhatsapp">Modelo da mensagem de WhatsApp</label>

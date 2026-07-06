@@ -703,6 +703,26 @@ button.botao-whatsapp:disabled {
   grid-column: 1 / -1;
 }
 
+/* Grupo de campos lado a lado cujos inputs devem ficar alinhados entre si mesmo quando
+   um dos rótulos quebra em mais linhas que os outros: os rótulos ficam na primeira linha
+   do subgrid e os inputs na segunda, então a altura de um rótulo não empurra só o input
+   dele */
+.grupo-config {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  row-gap: 4px;
+}
+
+.grupo-config > .campo {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
+  gap: 4px;
+}
+
 .previa-whatsapp {
   background: var(--bg);
   border: var(--card-border-width) solid var(--border);
