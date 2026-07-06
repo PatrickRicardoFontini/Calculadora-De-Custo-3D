@@ -30,6 +30,7 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
   const [clienteId, setClienteId] = useState("");
   const [novoClienteNome, setNovoClienteNome] = useState("");
   const [novoClienteWhatsapp, setNovoClienteWhatsapp] = useState("");
+  const [nomeOrcamento, setNomeOrcamento] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erroSalvar, setErroSalvar] = useState<string | null>(null);
   const [orcamentoSalvo, setOrcamentoSalvo] = useState(false);
@@ -118,6 +119,7 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
         margemPercentual: Number(form.margemPercentual),
       });
       setResultado(dados);
+      setNomeOrcamento((atual) => atual || `${dados.filamento.tipo} ${dados.filamento.cor}`);
     } catch (err) {
       setErro((err as Error).message);
     } finally {
@@ -136,6 +138,7 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
         ...(modoCliente === "existente" ? { clienteId } : { clienteNome: novoClienteNome, clienteWhatsapp: novoClienteWhatsapp }),
         filamentoId: form.filamentoId,
         maquinaId: maquinaId || undefined,
+        nome: nomeOrcamento.trim() || undefined,
         pesoUsadoG: Number(form.pesoUsadoG),
         horasImpressao: Number(form.horasImpressao),
         custoEnergiaHora: Number(form.custoEnergiaHora),
@@ -147,6 +150,7 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
       setOrcamentoSalvo(true);
       setNovoClienteNome("");
       setNovoClienteWhatsapp("");
+      setNomeOrcamento("");
       setExtras([]);
       aoSalvarOrcamento?.();
     } catch (err) {
@@ -302,6 +306,15 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
           <div className="secao-salvar-orcamento">
             <h3>Salvar como orçamento</h3>
             <form className="formulario" onSubmit={handleSalvarOrcamento}>
+              <div className="campo">
+                <label htmlFor="nomeOrcamento">Nome do orçamento</label>
+                <input
+                  id="nomeOrcamento"
+                  value={nomeOrcamento}
+                  onChange={(e) => setNomeOrcamento(e.target.value)}
+                  placeholder="Ex: Suporte de celular"
+                />
+              </div>
               <div className="campo">
                 <label htmlFor="modoCliente">Cliente</label>
                 <select

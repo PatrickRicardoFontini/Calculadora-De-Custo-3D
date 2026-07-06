@@ -90,6 +90,7 @@ model Orcamento {
   filamento      Filamento            @relation(fields: [filamentoId], references: [id])
   maquinaId      String?
   maquina        Maquina?             @relation(fields: [maquinaId], references: [id], onDelete: SetNull)
+  nome           String?
   pesoUsadoG     Decimal              @db.Decimal(10, 2)
   horasImpressao Decimal              @db.Decimal(10, 2)
   valorCalculado Decimal              @db.Decimal(10, 2)

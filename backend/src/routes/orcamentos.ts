@@ -70,6 +70,7 @@ orcamentosRouter.post("/", async (req, res) => {
     clienteWhatsapp,
     filamentoId,
     maquinaId,
+    nome,
     pesoUsadoG,
     horasImpressao,
     custoEnergiaHora,
@@ -82,6 +83,9 @@ orcamentosRouter.post("/", async (req, res) => {
   const erros: string[] = [];
   if (!filamentoId) {
     erros.push("Campo obrigatório ausente: filamentoId");
+  }
+  if (nome !== undefined && nome !== null && typeof nome !== "string") {
+    erros.push("Campo inválido: nome");
   }
   if (!clienteId && !clienteNome) {
     erros.push("Informe clienteId de um cliente existente ou clienteNome para criar um novo");
@@ -230,6 +234,7 @@ orcamentosRouter.post("/", async (req, res) => {
         clienteId: clienteIdFinal,
         filamentoId: filamento.id,
         maquinaId: maquinaId || null,
+        nome: typeof nome === "string" && nome.trim() ? nome.trim() : null,
         pesoUsadoG: entrada.pesoUsadoG,
         horasImpressao: entrada.horasImpressao,
         valorCalculado: valorFinal,
@@ -264,6 +269,30 @@ orcamentosRouter.post("/", async (req, res) => {
   });
 
   res.status(201).json(orcamentoCompleto);
+});
+
+// PUT /orcamentos/:id/nome - renomeia o orçamento, independente do status (não mexe em valor nem histórico)
+orcamentosRouter.put("/:id/nome", async (req, res) => {
+  const { nome } = req.body;
+
+  if (nome !== undefined && nome !== null && typeof nome !== "string") {
+    return res.status(400).json({ erro: "Campo 'nome' inválido" });
+  }
+
+  const orcamento = await prisma.orcamento.findFirst({
+    where: { id: req.params.id, usuarioId: req.usuarioId },
+  });
+  if (!orcamento) {
+    return res.status(404).json({ erro: "Orçamento não encontrado" });
+  }
+
+  const orcamentoAtualizado = await prisma.orcamento.update({
+    where: { id: orcamento.id },
+    data: { nome: typeof nome === "string" && nome.trim() ? nome.trim() : null },
+    include: INCLUDE_PADRAO,
+  });
+
+  res.json(orcamentoAtualizado);
 });
 
 // POST /orcamentos/:id/extras - adiciona um item extra a um orçamento pendente e recalcula o valor

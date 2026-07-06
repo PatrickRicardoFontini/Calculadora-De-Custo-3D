@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   adicionarExtra,
+  atualizarNomeOrcamento,
   atualizarStatusOrcamento,
   atualizarValorOrcamento,
   buscarMensagemWhatsapp,
@@ -34,6 +35,9 @@ export function Orcamentos() {
   const [novaExtraDescricao, setNovaExtraDescricao] = useState("");
   const [novaExtraValor, setNovaExtraValor] = useState("");
 
+  const [editandoNomeId, setEditandoNomeId] = useState<string | null>(null);
+  const [nomeEditado, setNomeEditado] = useState("");
+
   async function carregar() {
     setCarregando(true);
     try {
@@ -55,6 +59,25 @@ export function Orcamentos() {
   function iniciarEdicao(orcamento: Orcamento) {
     setEditandoId(orcamento.id);
     setValorEditado(orcamento.valorAtual);
+  }
+
+  function iniciarEdicaoNome(orcamento: Orcamento) {
+    setEditandoNomeId(orcamento.id);
+    setNomeEditado(orcamento.nome ?? "");
+  }
+
+  async function salvarNome(id: string) {
+    setProcessandoId(id);
+    setErro(null);
+    try {
+      const atualizado = await atualizarNomeOrcamento(id, nomeEditado.trim());
+      setOrcamentos((atual) => atual.map((o) => (o.id === atualizado.id ? atualizado : o)));
+      setEditandoNomeId(null);
+    } catch (err) {
+      setErro((err as Error).message);
+    } finally {
+      setProcessandoId(null);
+    }
   }
 
   async function salvarValor(id: string) {
@@ -200,9 +223,33 @@ export function Orcamentos() {
               <div key={orcamento.id} className={`card-orcamento status-${orcamento.status.toLowerCase()}`}>
                 <div className="card-orcamento-cabecalho" onClick={() => alternarExpandido(orcamento)}>
                   <div>
-                    <strong>{orcamento.cliente.nome}</strong>
+                    {editandoNomeId === orcamento.id ? (
+                      <span className="edicao-nome" onClick={(e) => e.stopPropagation()}>
+                        <input value={nomeEditado} onChange={(e) => setNomeEditado(e.target.value)} />
+                        <button disabled={processando} onClick={() => salvarNome(orcamento.id)}>
+                          Salvar
+                        </button>
+                        <button className="botao-secundario" onClick={() => setEditandoNomeId(null)}>
+                          Cancelar
+                        </button>
+                      </span>
+                    ) : (
+                      <>
+                        <strong>{orcamento.nome || orcamento.cliente.nome}</strong>
+                        <button
+                          className="link-acao"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            iniciarEdicaoNome(orcamento);
+                          }}
+                        >
+                          Editar nome
+                        </button>
+                      </>
+                    )}
                     <span className="detalhe-secundario">
                       {" "}
+                      {orcamento.nome && <>· {orcamento.cliente.nome} </>}
                       · {orcamento.filamento.tipo} {orcamento.filamento.cor}
                       {orcamento.filamento.marca ? ` (${orcamento.filamento.marca})` : ""} ·{" "}
                       {parseFloat(orcamento.pesoUsadoG).toFixed(0)}g ·{" "}

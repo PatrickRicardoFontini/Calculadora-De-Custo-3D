@@ -58,14 +58,22 @@ pro WhatsApp.
   usada tanto pra prévia (com dados de exemplo, sem precisar salvar o modelo antes) quanto
   pra mensagem real de um orçamento — evita ter a lógica de template duplicada entre
   prévia e envio de verdade
+- `Orcamento.nome` é o único campo do orçamento editável em qualquer status (PUT
+  /orcamentos/:id/nome não exige PENDENTE), porque é só organização/identificação, não
+  mexe em valor nem gera registro de histórico — diferente de valor e extras, que só
+  podem mudar enquanto o orçamento está pendente. O backend nunca gera sugestão de nome
+  sozinho, só salva o que vier no campo; a sugestão (tipo + cor do filamento) é
+  responsabilidade do frontend antes de enviar
 
 ## Já construído e testado
 
 1. Filamento: cadastro com marca (lista nacional/internacional + "outra"), preço por kg,
    estoque com alerta de mínimo, reabastecimento, histórico de movimentação
 2. Calculadora de orçamento (filamento, horas, energia, depreciação, margem)
-3. Cliente, orçamento com negociação (histórico de valor), aceitar/recusar, mensagem de
-   WhatsApp com link wa.me, com modelo customizável por conta (marcadores + prévia)
+3. Cliente, orçamento com nome (sugerido a partir do filamento, editável a qualquer
+   momento) como identificador principal na lista, negociação (histórico de valor),
+   aceitar/recusar, mensagem de WhatsApp com link wa.me, com modelo customizável por
+   conta (marcadores + prévia)
 4. Venda automática ao aceitar, com baixa de estoque em transação atômica, sem bloquear
    se o estoque ficar insuficiente
 5. Receita mensal com histórico de vendas filtrável por mês

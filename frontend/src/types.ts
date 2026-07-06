@@ -125,6 +125,7 @@ export interface Orcamento {
   clienteId: string;
   filamentoId: string;
   maquinaId: string | null;
+  nome: string | null;
   pesoUsadoG: string;
   horasImpressao: string;
   valorCalculado: string;
@@ -145,6 +146,7 @@ export interface NovoOrcamento {
   clienteWhatsapp?: string;
   filamentoId: string;
   maquinaId?: string;
+  nome?: string;
   pesoUsadoG: number;
   horasImpressao: number;
   custoEnergiaHora: number;

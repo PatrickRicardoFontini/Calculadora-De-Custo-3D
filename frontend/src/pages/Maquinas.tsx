@@ -218,8 +218,9 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
             onChange={(e) => setTemplateWhatsappInput(e.target.value)}
           />
           <span className="nota-campo">
-            Marcadores disponíveis: {"{cliente}"}, {"{material}"}, {"{peso}"}, {"{horas}"}, {"{valor}"} (já vem com
-            "R$"), {"{extras}"} (vira "Inclui: ..." quando há custos extras, ou vazio quando não há)
+            Marcadores disponíveis: {"{nome}"} (nome do orçamento), {"{cliente}"}, {"{material}"}, {"{peso}"},{" "}
+            {"{horas}"}, {"{valor}"} (já vem com "R$"), {"{extras}"} (vira "Inclui: ..." quando há custos extras, ou
+            vazio quando não há)
           </span>
           <button
             type="button"

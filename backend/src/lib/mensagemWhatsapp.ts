@@ -1,7 +1,9 @@
 import type { Prisma } from "@prisma/client";
 import { decimalToNumber } from "./decimal";
 
-export const MODELO_PADRAO_WHATSAPP = `Olá, {cliente}! Aqui está o orçamento da sua peça:
+export const MODELO_PADRAO_WHATSAPP = `Orçamento: {nome}
+
+Olá, {cliente}! Aqui está o orçamento da sua peça:
 
 Material: {material}
 Peso: {peso}
@@ -12,6 +14,7 @@ Valor: {valor}
 Qualquer dúvida, é só chamar!`;
 
 export interface DadosMensagemWhatsapp {
+  nome: string;
   cliente: string;
   material: string;
   peso: string;
@@ -30,6 +33,7 @@ export function renderizarMensagemWhatsapp(template: string, dados: DadosMensage
 
 export function dadosDeExemplo(): DadosMensagemWhatsapp {
   return {
+    nome: "Suporte de celular",
     cliente: "Maria Exemplo",
     material: "PLA Preto",
     peso: "50g",
@@ -40,6 +44,7 @@ export function dadosDeExemplo(): DadosMensagemWhatsapp {
 }
 
 interface OrcamentoParaMensagem {
+  nome: string | null;
   cliente: { nome: string };
   filamento: { tipo: string; cor: string };
   pesoUsadoG: Prisma.Decimal | number | string;
@@ -54,6 +59,7 @@ export function dadosDoOrcamento(orcamento: OrcamentoParaMensagem): DadosMensage
   const valor = decimalToNumber(orcamento.valorAtual).toFixed(2);
 
   return {
+    nome: orcamento.nome ?? "",
     cliente: orcamento.cliente.nome,
     material: `${orcamento.filamento.tipo} ${orcamento.filamento.cor}`,
     peso: `${peso}g`,

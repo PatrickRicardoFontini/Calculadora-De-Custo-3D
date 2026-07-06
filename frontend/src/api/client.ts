@@ -207,6 +207,15 @@ export async function atualizarStatusOrcamento(
   return tratarResposta(resposta);
 }
 
+export async function atualizarNomeOrcamento(id: string, nome: string): Promise<Orcamento> {
+  const resposta = await fetch(`${API_URL}/orcamentos/${id}/nome`, {
+    method: "PUT",
+    headers: headersComAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ nome }),
+  });
+  return tratarResposta(resposta);
+}
+
 export async function adicionarExtra(orcamentoId: string, descricao: string, valorCusto: number): Promise<Orcamento> {
   const resposta = await fetch(`${API_URL}/orcamentos/${orcamentoId}/extras`, {
     method: "POST",
