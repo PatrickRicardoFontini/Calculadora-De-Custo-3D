@@ -2,6 +2,10 @@
   --card-border-width: 3px;
   --card-radius: 14px;
   --card-shadow: 4px 4px 0 var(--border);
+  --card-shadow-hover: 5px 5px 0 var(--border);
+
+  --transition-fast: 0.1s ease-out;
+  --transition-smooth: 0.2s ease;
 
   --font-titulo: "Fredoka", sans-serif;
   --font-corpo: "IBM Plex Sans", sans-serif;
@@ -44,6 +48,8 @@
 
 * {
   box-sizing: border-box;
+  transition: background-color var(--transition-smooth), border-color var(--transition-smooth),
+    color var(--transition-smooth);
 }
 
 html,

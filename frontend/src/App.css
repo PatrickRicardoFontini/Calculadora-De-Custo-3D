@@ -40,6 +40,10 @@
   font-weight: 500;
 }
 
+.nav-item:not(.nav-item-ativo):hover {
+  background: var(--bg);
+}
+
 .nav-item-ativo {
   background: var(--green-dim);
   border-color: var(--border);
@@ -272,6 +276,40 @@
 .botao-perigo:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Efeito de botão pressionado: sombra em repouso, sobe no hover, "afunda" no clique */
+.botao-primario,
+.formulario-auth > button,
+.botao-secundario,
+.botao-perigo,
+.botao-whatsapp,
+.link-acao,
+.filtros-status button {
+  box-shadow: var(--card-shadow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.botao-primario:not(:disabled):hover,
+.formulario-auth > button:not(:disabled):hover,
+.botao-secundario:not(:disabled):hover,
+.botao-perigo:not(:disabled):hover,
+.botao-whatsapp:not(:disabled):hover,
+.link-acao:not(:disabled):hover,
+.filtros-status button:not(:disabled):hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.botao-primario:not(:disabled):active,
+.formulario-auth > button:not(:disabled):active,
+.botao-secundario:not(:disabled):active,
+.botao-perigo:not(:disabled):active,
+.botao-whatsapp:not(:disabled):active,
+.link-acao:not(:disabled):active,
+.filtros-status button:not(:disabled):active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
 }
 
 .resultado {
