@@ -51,14 +51,21 @@ pro WhatsApp.
   valor de extras novo. Cada mudança de extras atualiza `valorCalculado` e `valorAtual`
   juntos e gera um novo registro em `OrcamentoHistorico`, igual à negociação manual de
   valor
+- A mensagem de WhatsApp é montada no backend, não mais no frontend: `Usuario.templateWhatsapp`
+  guarda um modelo com marcadores ({cliente}, {material}, {peso}, {horas}, {valor},
+  {extras}), nulo significa "usar o modelo padrão" (constante `MODELO_PADRAO_WHATSAPP`).
+  Existe uma única função de substituição de marcadores (`renderizarMensagemWhatsapp`),
+  usada tanto pra prévia (com dados de exemplo, sem precisar salvar o modelo antes) quanto
+  pra mensagem real de um orçamento — evita ter a lógica de template duplicada entre
+  prévia e envio de verdade
 
 ## Já construído e testado
 
 1. Filamento: cadastro com marca (lista nacional/internacional + "outra"), preço por kg,
    estoque com alerta de mínimo, reabastecimento, histórico de movimentação
 2. Calculadora de orçamento (filamento, horas, energia, depreciação, margem)
-3. Cliente, orçamento com negociação (histórico de valor), aceitar/recusar, texto
-   formatado pro WhatsApp com link wa.me
+3. Cliente, orçamento com negociação (histórico de valor), aceitar/recusar, mensagem de
+   WhatsApp com link wa.me, com modelo customizável por conta (marcadores + prévia)
 4. Venda automática ao aceitar, com baixa de estoque em transação atômica, sem bloquear
    se o estoque ficar insuficiente
 5. Receita mensal com histórico de vendas filtrável por mês

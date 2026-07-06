@@ -1,5 +1,3 @@
-import type { Orcamento } from "../types";
-
 export function formatarTelefoneWhatsapp(whatsapp: string): string | null {
   const somenteDigitos = whatsapp.replace(/\D/g, "");
   if (somenteDigitos.length === 0) return null;
@@ -12,30 +10,6 @@ export function formatarTelefoneWhatsapp(whatsapp: string): string | null {
   return somenteDigitos;
 }
 
-export function montarMensagemOrcamento(orcamento: Orcamento): string {
-  const valor = parseFloat(orcamento.valorAtual).toFixed(2);
-  const peso = parseFloat(orcamento.pesoUsadoG).toFixed(0);
-  const horas = parseFloat(orcamento.horasImpressao).toFixed(1);
-  const linhaExtras =
-    orcamento.extras.length > 0 ? `\nInclui: ${orcamento.extras.map((e) => e.descricao).join(", ")}\n` : "";
-
-  return `Olá, ${orcamento.cliente.nome}! Aqui está o orçamento da sua peça:
-
-Material: ${orcamento.filamento.tipo} ${orcamento.filamento.cor}
-Peso: ${peso}g
-Tempo de impressão: ${horas}h
-${linhaExtras}
-Valor: R$ ${valor}
-
-Qualquer dúvida, é só chamar!`;
-}
-
-export function montarLinkWhatsapp(orcamento: Orcamento): string | null {
-  if (!orcamento.cliente.whatsapp) return null;
-
-  const numero = formatarTelefoneWhatsapp(orcamento.cliente.whatsapp);
-  if (!numero) return null;
-
-  const mensagem = montarMensagemOrcamento(orcamento);
+export function montarLinkWhatsapp(numero: string, mensagem: string): string {
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
 }

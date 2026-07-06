@@ -70,12 +70,22 @@ export async function buscarUsuarioAtual(): Promise<Usuario> {
 export async function atualizarConfiguracoes(
   precoKwh: number | null,
   margemPadrao: number | null,
-  margemExtrasPadrao: number | null
+  margemExtrasPadrao: number | null,
+  templateWhatsapp: string | null
 ): Promise<Usuario> {
   const resposta = await fetch(`${API_URL}/auth/configuracoes`, {
     method: "PUT",
     headers: headersComAuth({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ precoKwh, margemPadrao, margemExtrasPadrao }),
+    body: JSON.stringify({ precoKwh, margemPadrao, margemExtrasPadrao, templateWhatsapp }),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function preverMensagemWhatsapp(template: string): Promise<{ mensagem: string }> {
+  const resposta = await fetch(`${API_URL}/auth/preview-whatsapp`, {
+    method: "POST",
+    headers: headersComAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ template }),
   });
   return tratarResposta(resposta);
 }
@@ -209,6 +219,13 @@ export async function adicionarExtra(orcamentoId: string, descricao: string, val
 export async function removerExtra(orcamentoId: string, extraId: string): Promise<Orcamento> {
   const resposta = await fetch(`${API_URL}/orcamentos/${orcamentoId}/extras/${extraId}`, {
     method: "DELETE",
+    headers: headersComAuth(),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function buscarMensagemWhatsapp(orcamentoId: string): Promise<{ mensagem: string }> {
+  const resposta = await fetch(`${API_URL}/orcamentos/${orcamentoId}/mensagem-whatsapp`, {
     headers: headersComAuth(),
   });
   return tratarResposta(resposta);

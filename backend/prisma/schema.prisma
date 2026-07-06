@@ -15,6 +15,7 @@ model Usuario {
   precoKwh           Decimal?    @db.Decimal(10, 4)
   margemPadrao       Decimal?    @db.Decimal(5, 2)
   margemExtrasPadrao Decimal?    @db.Decimal(5, 2)
+  templateWhatsapp   String?     @db.Text
   criadoEm           DateTime    @default(now())
 
   clientes   Cliente[]

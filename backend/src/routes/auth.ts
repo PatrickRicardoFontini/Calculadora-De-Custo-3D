@@ -4,6 +4,7 @@ import type { Usuario } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { gerarToken } from "../lib/jwt";
 import { autenticacao } from "../middleware/autenticacao";
+import { MODELO_PADRAO_WHATSAPP, dadosDeExemplo, renderizarMensagemWhatsapp } from "../lib/mensagemWhatsapp";
 
 export const authRouter = Router();
 
@@ -22,6 +23,8 @@ function usuarioParaResposta(usuario: Usuario) {
     precoKwh: usuario.precoKwh,
     margemPadrao: usuario.margemPadrao,
     margemExtrasPadrao: usuario.margemExtrasPadrao,
+    templateWhatsapp: usuario.templateWhatsapp,
+    templateWhatsappPadrao: MODELO_PADRAO_WHATSAPP,
   };
 }
 
@@ -92,9 +95,9 @@ authRouter.get("/me", autenticacao, async (req, res) => {
   res.json(usuarioParaResposta(usuario));
 });
 
-// PUT /auth/configuracoes - atualiza preço do kWh e margens padrão da conta
+// PUT /auth/configuracoes - atualiza preço do kWh, margens padrão e template de WhatsApp da conta
 authRouter.put("/configuracoes", autenticacao, async (req, res) => {
-  const { precoKwh, margemPadrao, margemExtrasPadrao } = req.body;
+  const { precoKwh, margemPadrao, margemExtrasPadrao, templateWhatsapp } = req.body;
 
   const erros: string[] = [];
   if (precoKwh !== undefined && precoKwh !== null && precoKwh !== "" && Number.isNaN(Number(precoKwh))) {
@@ -110,6 +113,9 @@ authRouter.put("/configuracoes", autenticacao, async (req, res) => {
     Number.isNaN(Number(margemExtrasPadrao))
   ) {
     erros.push("Campo numérico inválido: margemExtrasPadrao");
+  }
+  if (templateWhatsapp !== undefined && templateWhatsapp !== null && typeof templateWhatsapp !== "string") {
+    erros.push("Campo inválido: templateWhatsapp");
   }
   if (erros.length > 0) {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
@@ -127,8 +133,23 @@ authRouter.put("/configuracoes", autenticacao, async (req, res) => {
       ...(margemExtrasPadrao !== undefined && {
         margemExtrasPadrao: margemExtrasPadrao === "" || margemExtrasPadrao === null ? null : Number(margemExtrasPadrao),
       }),
+      ...(templateWhatsapp !== undefined && {
+        templateWhatsapp: templateWhatsapp === "" || templateWhatsapp === null ? null : templateWhatsapp,
+      }),
     },
   });
 
   res.json(usuarioParaResposta(usuario));
+});
+
+// POST /auth/preview-whatsapp - renderiza um template (ainda não salvo) com dados de exemplo
+authRouter.post("/preview-whatsapp", autenticacao, async (req, res) => {
+  const { template } = req.body;
+
+  if (template !== undefined && typeof template !== "string") {
+    return res.status(400).json({ erro: "Campo 'template' inválido" });
+  }
+
+  const mensagem = renderizarMensagemWhatsapp(template ?? MODELO_PADRAO_WHATSAPP, dadosDeExemplo());
+  res.json({ mensagem });
 });

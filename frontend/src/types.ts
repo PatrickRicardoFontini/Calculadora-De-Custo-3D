@@ -5,6 +5,8 @@ export interface Usuario {
   precoKwh: string | null;
   margemPadrao: string | null;
   margemExtrasPadrao: string | null;
+  templateWhatsapp: string | null;
+  templateWhatsappPadrao: string;
 }
 
 export interface RespostaAuth {

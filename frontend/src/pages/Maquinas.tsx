@@ -5,6 +5,7 @@ import {
   criarMaquina,
   excluirMaquina,
   listarMaquinas,
+  preverMensagemWhatsapp,
 } from "../api/client";
 import type { Maquina, Usuario } from "../types";
 import { MODELOS_MAQUINA, OUTRA_MAQUINA, VIDA_UTIL_SUGERIDA_HORAS } from "../lib/maquinas";
@@ -34,15 +35,34 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
   const [precoKwhInput, setPrecoKwhInput] = useState(usuario.precoKwh ?? "");
   const [margemPadraoInput, setMargemPadraoInput] = useState(usuario.margemPadrao ?? "");
   const [margemExtrasPadraoInput, setMargemExtrasPadraoInput] = useState(usuario.margemExtrasPadrao ?? "");
+  const [templateWhatsappInput, setTemplateWhatsappInput] = useState(
+    usuario.templateWhatsapp ?? usuario.templateWhatsappPadrao
+  );
   const [enviandoConfig, setEnviandoConfig] = useState(false);
   const [erroConfig, setErroConfig] = useState<string | null>(null);
   const [sucessoConfig, setSucessoConfig] = useState(false);
+
+  const [previaMensagem, setPreviaMensagem] = useState("");
+  const [erroPrevia, setErroPrevia] = useState<string | null>(null);
 
   useEffect(() => {
     setPrecoKwhInput(usuario.precoKwh ?? "");
     setMargemPadraoInput(usuario.margemPadrao ?? "");
     setMargemExtrasPadraoInput(usuario.margemExtrasPadrao ?? "");
+    setTemplateWhatsappInput(usuario.templateWhatsapp ?? usuario.templateWhatsappPadrao);
   }, [usuario]);
+
+  useEffect(() => {
+    const temporizador = setTimeout(() => {
+      preverMensagemWhatsapp(templateWhatsappInput)
+        .then((resultado) => {
+          setPreviaMensagem(resultado.mensagem);
+          setErroPrevia(null);
+        })
+        .catch((err) => setErroPrevia((err as Error).message));
+    }, 400);
+    return () => clearTimeout(temporizador);
+  }, [templateWhatsappInput]);
 
   async function carregar() {
     setCarregando(true);
@@ -138,7 +158,8 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
       const atualizado = await atualizarConfiguracoes(
         precoKwhInput === "" ? null : Number(precoKwhInput),
         margemPadraoInput === "" ? null : Number(margemPadraoInput),
-        margemExtrasPadraoInput === "" ? null : Number(margemExtrasPadraoInput)
+        margemExtrasPadraoInput === "" ? null : Number(margemExtrasPadraoInput),
+        templateWhatsappInput === "" ? null : templateWhatsappInput
       );
       aoAtualizarUsuario(atualizado);
       setSucessoConfig(true);
@@ -156,7 +177,7 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
 
       <form className="formulario formulario-config" onSubmit={handleSalvarConfig}>
         <div className="campo">
-          <label htmlFor="precoKwh">Preço do kWh (R$)</label>
+          <label htmlFor="precoKwh">Preço do kWh(R$)</label>
           <input
             id="precoKwh"
             type="number"
@@ -167,7 +188,7 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
           />
         </div>
         <div className="campo">
-          <label htmlFor="margemPadrao">Margem de lucro padrão (%)</label>
+          <label htmlFor="margemPadrao">Margem de lucro padrão(%)</label>
           <input
             id="margemPadrao"
             type="number"
@@ -178,7 +199,7 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
           />
         </div>
         <div className="campo">
-          <label htmlFor="margemExtrasPadrao">Margem padrão de custos extras (%)</label>
+          <label htmlFor="margemExtrasPadrao">Margem padrão de custos extras(%)</label>
           <input
             id="margemExtrasPadrao"
             type="number"
@@ -187,6 +208,31 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
             value={margemExtrasPadraoInput}
             onChange={(e) => setMargemExtrasPadraoInput(e.target.value)}
           />
+        </div>
+        <div className="campo campo-largura-total">
+          <label htmlFor="templateWhatsapp">Modelo da mensagem de WhatsApp</label>
+          <textarea
+            id="templateWhatsapp"
+            rows={8}
+            value={templateWhatsappInput}
+            onChange={(e) => setTemplateWhatsappInput(e.target.value)}
+          />
+          <span className="nota-campo">
+            Marcadores disponíveis: {"{cliente}"}, {"{material}"}, {"{peso}"}, {"{horas}"}, {"{valor}"} (já vem com
+            "R$"), {"{extras}"} (vira "Inclui: ..." quando há custos extras, ou vazio quando não há)
+          </span>
+          <button
+            type="button"
+            className="botao-secundario"
+            onClick={() => setTemplateWhatsappInput(usuario.templateWhatsappPadrao)}
+          >
+            Restaurar padrão
+          </button>
+        </div>
+        <div className="campo campo-largura-total previa-whatsapp">
+          <h4>Prévia (com dados de exemplo)</h4>
+          {erroPrevia && <p className="erro">{erroPrevia}</p>}
+          <pre>{previaMensagem}</pre>
         </div>
         <button type="submit" disabled={enviandoConfig}>
           {enviandoConfig ? "Salvando..." : "Salvar configurações"}

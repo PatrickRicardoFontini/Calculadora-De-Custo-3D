@@ -3,12 +3,13 @@ import {
   adicionarExtra,
   atualizarStatusOrcamento,
   atualizarValorOrcamento,
+  buscarMensagemWhatsapp,
   buscarOrcamento,
   listarOrcamentos,
   removerExtra,
 } from "../api/client";
 import type { Orcamento, StatusOrcamento } from "../types";
-import { montarLinkWhatsapp } from "../lib/whatsapp";
+import { formatarTelefoneWhatsapp, montarLinkWhatsapp } from "../lib/whatsapp";
 
 type Filtro = "TODOS" | StatusOrcamento;
 
@@ -143,6 +144,27 @@ export function Orcamentos() {
     }
   }
 
+  async function abrirWhatsapp(orcamento: Orcamento) {
+    const numero = orcamento.cliente.whatsapp ? formatarTelefoneWhatsapp(orcamento.cliente.whatsapp) : null;
+    if (!numero) return;
+
+    // abre a aba já na hora do clique, antes do fetch, senão o navegador bloqueia o popup
+    const aba = window.open("", "_blank");
+    setProcessandoId(orcamento.id);
+    setErro(null);
+    try {
+      const { mensagem } = await buscarMensagemWhatsapp(orcamento.id);
+      if (aba) {
+        aba.location.href = montarLinkWhatsapp(numero, mensagem);
+      }
+    } catch (err) {
+      setErro((err as Error).message);
+      aba?.close();
+    } finally {
+      setProcessandoId(null);
+    }
+  }
+
   return (
     <div className="pagina">
       <h2>Orçamentos</h2>
@@ -168,7 +190,9 @@ export function Orcamentos() {
       ) : (
         <div className="lista-orcamentos">
           {orcamentos.map((orcamento) => {
-            const linkWhatsapp = montarLinkWhatsapp(orcamento);
+            const temWhatsapp = Boolean(
+              orcamento.cliente.whatsapp && formatarTelefoneWhatsapp(orcamento.cliente.whatsapp)
+            );
             const emEdicao = editandoId === orcamento.id;
             const processando = processandoId === orcamento.id;
 
@@ -231,10 +255,10 @@ export function Orcamentos() {
                       >
                         Recusar
                       </button>
-                      {linkWhatsapp ? (
-                        <a className="botao-whatsapp" href={linkWhatsapp} target="_blank" rel="noreferrer">
+                      {temWhatsapp ? (
+                        <button className="botao-whatsapp" disabled={processando} onClick={() => abrirWhatsapp(orcamento)}>
                           Abrir no WhatsApp
-                        </a>
+                        </button>
                       ) : (
                         <button className="botao-whatsapp" disabled title="Cliente sem WhatsApp cadastrado">
                           Abrir no WhatsApp

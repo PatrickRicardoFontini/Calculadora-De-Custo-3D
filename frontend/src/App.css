@@ -578,6 +578,39 @@ button.botao-whatsapp:disabled {
   border-top: 1px dashed var(--border);
 }
 
+.campo textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.campo-largura-total {
+  grid-column: 1 / -1;
+}
+
+.previa-whatsapp {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.previa-whatsapp h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.previa-whatsapp pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 13px;
+}
+
 .secao-extras h4 {
   margin: 0 0 6px;
   font-size: 13px;

@@ -9,6 +9,7 @@ import {
   somarCustoExtras,
 } from "../lib/calculo";
 import { decimalToNumber } from "../lib/decimal";
+import { MODELO_PADRAO_WHATSAPP, dadosDoOrcamento, renderizarMensagemWhatsapp } from "../lib/mensagemWhatsapp";
 import type { StatusOrcamento } from "@prisma/client";
 
 export const orcamentosRouter = Router();
@@ -482,4 +483,21 @@ orcamentosRouter.put("/:id/status", async (req, res) => {
   const estoqueBaixo = decimalToNumber(filamentoAtualizado.pesoAtualG) < decimalToNumber(filamentoAtualizado.estoqueMinimoG);
 
   res.json({ ...orcamentoCompleto, estoqueBaixo });
+});
+
+// GET /orcamentos/:id/mensagem-whatsapp - mensagem pronta pra enviar, usando o template do usuário (ou o padrão)
+orcamentosRouter.get("/:id/mensagem-whatsapp", async (req, res) => {
+  const orcamento = await prisma.orcamento.findFirst({
+    where: { id: req.params.id, usuarioId: req.usuarioId },
+    include: { cliente: true, filamento: true, extras: true },
+  });
+  if (!orcamento) {
+    return res.status(404).json({ erro: "Orçamento não encontrado" });
+  }
+
+  const usuario = await prisma.usuario.findUnique({ where: { id: req.usuarioId } });
+  const template = usuario?.templateWhatsapp ?? MODELO_PADRAO_WHATSAPP;
+  const mensagem = renderizarMensagemWhatsapp(template, dadosDoOrcamento(orcamento));
+
+  res.json({ mensagem });
 });
