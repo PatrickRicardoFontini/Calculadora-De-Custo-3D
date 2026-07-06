@@ -19,6 +19,40 @@ pro WhatsApp.
   calculadora_custos
 - Ainda sem deploy, roda só localmente
 
+## Identidade visual — vale pra toda tela nova daqui pra frente
+
+- Sistema de design "cinza-verde": paleta e tipografia vêm de arquivos de referência
+  HTML standalone, guardados em `/design-reference` (só o tema escuro,
+  `proposta-visual-v5e-cinzaverde-escuro.html`, foi efetivamente recebido nesta sessão;
+  o tema claro foi derivado das variáveis de cor passadas em texto, já que o arquivo
+  `proposta-visual-v5d-cinzaverde-claro.html` não chegou a ser anexado — vale a pena
+  conferir com o dono do projeto se algum dia esse arquivo aparecer). Esses arquivos são
+  a fonte da verdade visual — qualquer dúvida de cor/estilo de cartão se resolve olhando
+  eles, não este resumo
+- Tema claro/escuro via atributo `data-theme` na tag `<html>` ("light"/"dark"), lido de
+  `localStorage` (chave "tema") com prioridade sobre `prefers-color-scheme` do sistema,
+  que só vale no primeiro acesso sem escolha salva. Todas as cores são variáveis CSS
+  (`frontend/src/index.css`); estrutura (espessura de borda 3px, raio de canto 14px,
+  sombra `4px 4px 0 var(--border)`) é fixa e igual nos dois temas — só a cor muda,
+  nunca redesenha o componente
+- Verde é reservado pra marca (logo "calc3d", item de menu ativo) e status "aceito";
+  dourado é sempre "pendente"; vermelho/coral é sempre "recusado" ou erro. Não usar
+  verde em botão qualquer só porque é a cor de destaque — dilui o significado. Por
+  isso "Abrir no WhatsApp" usa estilo neutro/secundário, não o verde da marca do
+  WhatsApp
+- Fredoka (500/600) pra títulos, logo, nome de seção e rótulo de card; IBM Plex Sans
+  (400/500) pro corpo e formulário; Space Mono (700) pra todo número exibido (preço,
+  peso, hora, percentual) — classe utilitária `.numero`, aplicada manualmente span por
+  span onde um valor numérico aparece misturado com texto de rótulo
+  (nunca no texto inteiro de um parágrafo)
+- Navegação é barra lateral fixa (`.sidebar`), não mais abas horizontais — logo no
+  topo, itens principais empilhados, Sair e alternador de tema juntos embaixo,
+  separados por divisória
+- Botões têm três variantes só: primário (`.botao-primario`, verde, ação principal
+  tipo Salvar/Calcular/Aceitar), secundário (`.botao-secundario`, neutro) e perigo
+  (`.botao-perigo`, vermelho preenchido, tipo Excluir/Recusar/Remover) — mesma
+  borda/canto do cartão nos três casos
+
 ## Decisões arquiteturais — não reverter sem avisar o dono do projeto
 
 - `Filamento.precoPorGrama` é um campo direto, não derivado de preço/peso total.
@@ -82,6 +116,9 @@ pro WhatsApp.
 8. Custos extras no orçamento: itens avulsos (descrição + custo) com margem própria,
    somados ao valor final; adicionar/remover só com orçamento PENDENTE, texto do
    WhatsApp lista o que está incluso
+9. Identidade visual "cinza-verde" com tema claro/escuro alternável, aplicada em todas
+   as telas (login, registro, estoque, calculadora, orçamentos, máquinas, receita),
+   com barra lateral de navegação substituindo as abas horizontais
 
 ## Pendente
 

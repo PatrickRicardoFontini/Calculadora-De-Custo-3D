@@ -11,13 +11,41 @@ import { limparToken, obterToken } from "./lib/auth";
 import type { Usuario } from "./types";
 import "./App.css";
 
-type Aba = "estoque" | "calculadora" | "orcamentos" | "receita" | "maquinas";
+type Aba = "estoque" | "calculadora" | "orcamentos" | "maquinas" | "receita";
+type Tema = "light" | "dark";
+
+const ITENS_NAV: { aba: Aba; rotulo: string }[] = [
+  { aba: "estoque", rotulo: "Estoque" },
+  { aba: "calculadora", rotulo: "Calculadora" },
+  { aba: "orcamentos", rotulo: "Orçamentos" },
+  { aba: "maquinas", rotulo: "Máquinas" },
+  { aba: "receita", rotulo: "Receita" },
+];
+
+function obterTemaInicial(): Tema {
+  const salvo = localStorage.getItem("tema");
+  if (salvo === "light" || salvo === "dark") return salvo;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
 
 function App() {
   const [aba, setAba] = useState<Aba>("estoque");
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [verificando, setVerificando] = useState(true);
   const [modoAuth, setModoAuth] = useState<"login" | "registro">("login");
+  const [tema, setTema] = useState<Tema>(obterTemaInicial);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", tema);
+  }, [tema]);
+
+  function alternarTema() {
+    setTema((atual) => {
+      const novo: Tema = atual === "light" ? "dark" : "light";
+      localStorage.setItem("tema", novo);
+      return novo;
+    });
+  }
 
   useEffect(() => {
     function aoDeslogar() {
@@ -57,41 +85,36 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <header className="cabecalho">
-        <div className="cabecalho-topo">
-          <h1>Calculadora de Custos - Impressão 3D</h1>
-          <div className="usuario-logado">
-            <span>{usuario.nome}</span>
-            <button className="botao-secundario" onClick={handleSair}>
-              Sair
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="logo">calc3d</div>
+        <nav className="nav-principal">
+          {ITENS_NAV.map((item) => (
+            <button
+              key={item.aba}
+              className={aba === item.aba ? "nav-item nav-item-ativo" : "nav-item"}
+              onClick={() => setAba(item.aba)}
+            >
+              {item.rotulo}
             </button>
-          </div>
-        </div>
-        <nav className="abas">
-          <button className={aba === "estoque" ? "aba-ativa" : ""} onClick={() => setAba("estoque")}>
-            Estoque
-          </button>
-          <button className={aba === "calculadora" ? "aba-ativa" : ""} onClick={() => setAba("calculadora")}>
-            Calculadora
-          </button>
-          <button className={aba === "orcamentos" ? "aba-ativa" : ""} onClick={() => setAba("orcamentos")}>
-            Orçamentos
-          </button>
-          <button className={aba === "receita" ? "aba-ativa" : ""} onClick={() => setAba("receita")}>
-            Receita
-          </button>
-          <button className={aba === "maquinas" ? "aba-ativa" : ""} onClick={() => setAba("maquinas")}>
-            Máquinas
-          </button>
+          ))}
         </nav>
-      </header>
-      <main>
+        <div className="sidebar-rodape">
+          <span className="usuario-sidebar">{usuario.nome}</span>
+          <button className="nav-item" onClick={alternarTema}>
+            {tema === "dark" ? "Tema claro" : "Tema escuro"}
+          </button>
+          <button className="nav-item" onClick={handleSair}>
+            Sair
+          </button>
+        </div>
+      </aside>
+      <main className="conteudo">
         {aba === "estoque" && <Estoque />}
         {aba === "calculadora" && <Calculadora usuario={usuario} aoSalvarOrcamento={() => setAba("orcamentos")} />}
         {aba === "orcamentos" && <Orcamentos />}
-        {aba === "receita" && <Receita />}
         {aba === "maquinas" && <Maquinas usuario={usuario} aoAtualizarUsuario={setUsuario} />}
+        {aba === "receita" && <Receita />}
       </main>
     </div>
   );

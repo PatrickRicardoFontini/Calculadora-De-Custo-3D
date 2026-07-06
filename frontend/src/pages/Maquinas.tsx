@@ -173,7 +173,7 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
 
   return (
     <div className="pagina">
-      <h2>Máquinas</h2>
+      <h1>Máquinas</h1>
 
       <form className="formulario formulario-config" onSubmit={handleSalvarConfig}>
         <div className="campo">
@@ -235,14 +235,14 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
           {erroPrevia && <p className="erro">{erroPrevia}</p>}
           <pre>{previaMensagem}</pre>
         </div>
-        <button type="submit" disabled={enviandoConfig}>
+        <button type="submit" className="botao-primario" disabled={enviandoConfig}>
           {enviandoConfig ? "Salvando..." : "Salvar configurações"}
         </button>
       </form>
       {erroConfig && <p className="erro">{erroConfig}</p>}
       {sucessoConfig && <p className="sucesso">Configurações salvas!</p>}
 
-      <h3>{editandoId ? "Editar máquina" : "Cadastrar máquina"}</h3>
+      <h2>{editandoId ? "Editar máquina" : "Cadastrar máquina"}</h2>
       <form className="formulario" onSubmit={handleSubmit}>
         <div className="campo">
           <label htmlFor="modelo">Modelo</label>
@@ -296,7 +296,7 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
             onChange={(e) => atualizarCampo("vidaUtilHoras", e.target.value)}
           />
         </div>
-        <button type="submit" disabled={enviando}>
+        <button type="submit" className="botao-primario" disabled={enviando}>
           {enviando ? "Salvando..." : editandoId ? "Salvar alterações" : "Cadastrar máquina"}
         </button>
         {editandoId && (
@@ -312,7 +312,7 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
 
       {erro && <p className="erro">{erro}</p>}
 
-      <h3>Máquinas cadastradas</h3>
+      <h2>Máquinas cadastradas</h2>
       {carregando ? (
         <p>Carregando...</p>
       ) : maquinas.length === 0 ? (
@@ -340,11 +340,11 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
               return (
                 <tr key={m.id}>
                   <td>{m.nome}</td>
-                  <td>{parseFloat(m.potenciaWatts).toFixed(0)} W</td>
-                  <td>R$ {parseFloat(m.precoCompra).toFixed(2)}</td>
-                  <td>{parseFloat(m.vidaUtilHoras).toFixed(0)} h</td>
-                  <td>R$ {depreciacaoHora.toFixed(4)}</td>
-                  <td>{energiaHora !== null ? `R$ ${energiaHora.toFixed(4)}` : "—"}</td>
+                  <td className="numero">{parseFloat(m.potenciaWatts).toFixed(0)} W</td>
+                  <td className="numero">R$ {parseFloat(m.precoCompra).toFixed(2)}</td>
+                  <td className="numero">{parseFloat(m.vidaUtilHoras).toFixed(0)} h</td>
+                  <td className="numero">R$ {depreciacaoHora.toFixed(4)}</td>
+                  <td className="numero">{energiaHora !== null ? `R$ ${energiaHora.toFixed(4)}` : "—"}</td>
                   <td className="celula-acoes">
                     <button className="botao-secundario" onClick={() => iniciarEdicao(m)}>
                       Editar

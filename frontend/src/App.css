@@ -1,36 +1,84 @@
-.app {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 24px;
-}
-
-.cabecalho {
-  margin-bottom: 24px;
-}
-
-.cabecalho h1 {
-  font-size: 22px;
-  margin: 0 0 12px;
-}
-
-.cabecalho-topo {
+.app-shell {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
+  min-height: 100vh;
 }
 
-.cabecalho-topo h1 {
-  margin: 0;
-}
-
-.usuario-logado {
+.sidebar {
+  width: 220px;
+  background: var(--surface);
+  border-right: 4px solid var(--border);
+  padding: 24px 16px;
+  flex-shrink: 0;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+}
+
+.logo {
+  font-family: var(--font-titulo);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--green);
+  margin-bottom: 32px;
+}
+
+.nav-principal {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 3px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-secondary);
   font-size: 14px;
-  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.nav-item-ativo {
+  background: var(--green-dim);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.sidebar-rodape {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: var(--card-border-width) solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.usuario-sidebar {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  padding: 0 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.conteudo {
+  flex: 1;
+  padding: 36px 44px;
+  max-width: 900px;
+}
+
+@media (max-width: 640px) {
+  .sidebar {
+    width: 160px;
+    padding: 16px 10px;
+  }
+
+  .conteudo {
+    padding: 20px;
+  }
 }
 
 .tela-auth {
@@ -39,14 +87,16 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
+  background: var(--bg);
 }
 
 .cartao-auth {
   width: 100%;
   max-width: 380px;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: var(--surface);
+  border: var(--card-border-width) solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
   padding: 32px;
 }
 
@@ -58,32 +108,11 @@
 .troca-auth {
   text-align: center;
   font-size: 14px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin: 16px 0 0;
 }
 
-.abas {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid var(--border);
-}
-
-.abas button {
-  padding: 10px 16px;
-  border: none;
-  background: none;
-  font-size: 15px;
-  color: var(--text-muted);
-  border-bottom: 2px solid transparent;
-}
-
-.abas button.aba-ativa {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  font-weight: 600;
-}
-
-.pagina h2 {
+.pagina h1 {
   margin-top: 0;
 }
 
@@ -91,9 +120,10 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 14px;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: var(--surface);
+  border: var(--card-border-width) solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
   padding: 20px;
   margin-bottom: 20px;
 }
@@ -103,6 +133,7 @@
   flex-direction: column;
   background: none;
   border: none;
+  box-shadow: none;
   padding: 0;
   margin: 0;
 }
@@ -119,52 +150,66 @@
 
 .campo label {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .campo input,
-.campo select {
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+.campo select,
+.campo textarea {
+  background: var(--surface);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
   font-size: 14px;
+  font-family: inherit;
 }
 
-.formulario > button {
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  outline: none;
+  border-color: var(--green);
+}
+
+.campo textarea {
+  resize: vertical;
+}
+
+.botao-primario,
+.formulario-auth > button {
   grid-column: 1 / -1;
   justify-self: start;
   padding: 10px 20px;
-  background: var(--accent);
+  background: var(--green);
   color: white;
-  border: none;
-  border-radius: 6px;
+  border: var(--card-border-width) solid var(--border);
+  border-radius: var(--card-radius);
   font-size: 14px;
   font-weight: 600;
 }
 
-.formulario > button:hover {
-  background: var(--accent-hover);
-}
-
-.formulario > button:disabled {
+.botao-primario:disabled,
+.formulario-auth > button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
 .erro {
-  background: var(--danger-bg);
-  color: var(--danger);
+  background: var(--danger-dim);
+  color: var(--danger-text-on-dim);
   padding: 10px 14px;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 16px;
 }
 
 .tabela {
   width: 100%;
   border-collapse: collapse;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: var(--surface);
+  border: var(--card-border-width) solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
   overflow: hidden;
 }
 
@@ -177,9 +222,10 @@
 }
 
 .tabela th {
-  background: #f0f0f3;
-  color: var(--text-muted);
-  font-weight: 600;
+  font-family: var(--font-titulo);
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 13px;
 }
 
 .tabela tr:last-child td {
@@ -187,11 +233,11 @@
 }
 
 .linha-alerta {
-  background: #fff6e5;
+  background: var(--gold-dim);
 }
 
 .badge-alerta {
-  color: #b8860b;
+  color: var(--gold-text-on-dim);
   font-weight: 600;
   font-size: 12px;
 }
@@ -199,27 +245,33 @@
 .botao-secundario {
   padding: 6px 12px;
   background: none;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  border-radius: 6px;
+  border: 2px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
   font-size: 13px;
 }
 
 .botao-secundario:hover {
-  background: #f0f0f3;
+  background: var(--bg);
+}
+
+.botao-secundario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .botao-perigo {
   padding: 6px 12px;
-  background: none;
-  border: 1px solid var(--danger);
-  color: var(--danger);
-  border-radius: 6px;
+  background: var(--danger);
+  color: white;
+  border: 2px solid var(--border);
+  border-radius: 8px;
   font-size: 13px;
 }
 
-.botao-perigo:hover {
-  background: var(--danger-bg);
+.botao-perigo:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .resultado {
@@ -233,10 +285,10 @@
 }
 
 .sucesso {
-  background: #e6f7ec;
-  color: #1e7a3d;
+  background: var(--green-dim);
+  color: var(--green-text-on-dim);
   padding: 10px 14px;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 16px;
 }
 
@@ -258,17 +310,17 @@
 
 .filtros-status button {
   padding: 6px 14px;
-  border: 1px solid var(--border);
-  background: var(--card-bg);
-  border-radius: 20px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  border-radius: 999px;
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .filtros-status button.filtro-ativo {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
+  background: var(--green-dim);
+  border-color: var(--border);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -279,19 +331,20 @@
 }
 
 .card-orcamento {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--border);
-  border-radius: 8px;
+  background: var(--surface);
+  border: var(--card-border-width) solid var(--border);
+  border-left: 6px solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
   padding: 14px 18px;
 }
 
 .card-orcamento.status-pendente {
-  border-left-color: #d9a300;
+  border-left-color: var(--gold);
 }
 
 .card-orcamento.status-aceito {
-  border-left-color: #1e7a3d;
+  border-left-color: var(--green);
 }
 
 .card-orcamento.status-recusado {
@@ -306,30 +359,31 @@
 }
 
 .detalhe-secundario {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 .badge-status {
-  padding: 4px 10px;
-  border-radius: 12px;
+  font-family: var(--font-titulo);
+  padding: 5px 12px;
+  border-radius: 999px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .badge-pendente {
-  background: #fff6e5;
-  color: #b8860b;
+  background: var(--gold-dim);
+  color: var(--gold-text-on-dim);
 }
 
 .badge-aceito {
-  background: #e6f7ec;
-  color: #1e7a3d;
+  background: var(--green-dim);
+  color: var(--green-text-on-dim);
 }
 
 .badge-recusado {
-  background: var(--danger-bg);
-  color: var(--danger);
+  background: var(--danger-dim);
+  color: var(--danger-text-on-dim);
 }
 
 .card-orcamento-corpo {
@@ -349,35 +403,24 @@
 
 .acoes-orcamento button {
   padding: 6px 14px;
-  border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 13px;
-  background: var(--accent);
-  color: white;
-}
-
-.acoes-orcamento button.botao-secundario {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-}
-
-.acoes-orcamento button.botao-perigo {
-  background: none;
-  border: 1px solid var(--danger);
-  color: var(--danger);
 }
 
 .botao-whatsapp {
   padding: 6px 14px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 13px;
-  background: #25d366;
-  color: white;
+  background: none;
+  color: var(--text-primary);
+  border: 2px solid var(--border);
   text-decoration: none;
-  border: none;
   display: inline-flex;
   align-items: center;
+}
+
+.botao-whatsapp:hover {
+  background: var(--bg);
 }
 
 .botao-whatsapp:disabled,
@@ -394,10 +437,17 @@ button.botao-whatsapp:disabled {
 }
 
 .edicao-valor input {
+  background: var(--surface);
+  color: var(--text-primary);
   padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
   width: 120px;
+}
+
+.edicao-valor input:focus {
+  outline: none;
+  border-color: var(--green);
 }
 
 .edicao-nome {
@@ -407,10 +457,17 @@ button.botao-whatsapp:disabled {
 }
 
 .edicao-nome input {
+  background: var(--surface);
+  color: var(--text-primary);
   padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
   width: 220px;
+}
+
+.edicao-nome input:focus {
+  outline: none;
+  border-color: var(--green);
 }
 
 .historico-valores {
@@ -422,7 +479,7 @@ button.botao-whatsapp:disabled {
 .historico-valores h4 {
   margin: 0 0 6px;
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .historico-valores ul {
@@ -440,14 +497,14 @@ button.botao-whatsapp:disabled {
 .link-acao {
   padding: 6px 12px;
   background: none;
-  border: 1px solid var(--border);
-  color: var(--accent);
-  border-radius: 6px;
+  border: 2px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
   font-size: 13px;
 }
 
 .link-acao:hover {
-  background: #f0f0f3;
+  background: var(--bg);
 }
 
 .painel-inline {
@@ -458,10 +515,17 @@ button.botao-whatsapp:disabled {
 }
 
 .painel-inline input {
+  background: var(--surface);
+  color: var(--text-primary);
   padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
   width: 140px;
+}
+
+.painel-inline input:focus {
+  outline: none;
+  border-color: var(--green);
 }
 
 .painel-movimentos {
@@ -479,28 +543,29 @@ button.botao-whatsapp:disabled {
 }
 
 .badge-movimento {
-  padding: 2px 8px;
-  border-radius: 10px;
+  font-family: var(--font-titulo);
+  padding: 2px 10px;
+  border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   margin-right: 6px;
 }
 
 .badge-entrada {
-  background: #e6f7ec;
-  color: #1e7a3d;
+  background: var(--green-dim);
+  color: var(--green-text-on-dim);
 }
 
 .badge-saida {
-  background: var(--danger-bg);
-  color: var(--danger);
+  background: var(--danger-dim);
+  color: var(--danger-text-on-dim);
 }
 
 .aviso-estoque-baixo {
-  background: #fff6e5;
-  color: #b8860b;
+  background: var(--gold-dim);
+  color: var(--gold-text-on-dim);
   padding: 10px 14px;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-top: 10px;
 }
 
@@ -509,23 +574,26 @@ button.botao-whatsapp:disabled {
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
-  border-radius: 8px;
+  background: var(--surface);
+  border: var(--card-border-width) solid var(--border);
+  border-left: 6px solid var(--green);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
   padding: 24px;
   margin-bottom: 24px;
 }
 
 .rotulo-destaque {
+  font-family: var(--font-titulo);
   font-size: 14px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .valor-destaque {
+  font-family: var(--font-numero);
   font-size: 40px;
   font-weight: 700;
-  color: var(--text);
+  color: var(--green);
 }
 
 .titulo-historico {
@@ -545,10 +613,17 @@ button.botao-whatsapp:disabled {
 
 .campo-marca-customizada input {
   flex: 1;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
   font-size: 14px;
+}
+
+.campo-marca-customizada input:focus {
+  outline: none;
+  border-color: var(--green);
 }
 
 .campo-marca-customizada .link-acao {
@@ -557,19 +632,14 @@ button.botao-whatsapp:disabled {
 
 .dica-cadastro {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin: -8px 0 20px;
 }
 
 .nota-campo {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin-top: 2px;
-}
-
-.formulario-config {
-  background: #f0f4ff;
-  border-color: var(--accent-border);
 }
 
 .lista-extras {
@@ -591,30 +661,21 @@ button.botao-whatsapp:disabled {
   border-top: 1px dashed var(--border);
 }
 
-.campo textarea {
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 14px;
-  font-family: inherit;
-  resize: vertical;
-}
-
 .campo-largura-total {
   grid-column: 1 / -1;
 }
 
 .previa-whatsapp {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: var(--bg);
+  border: var(--card-border-width) solid var(--border);
+  border-radius: var(--card-radius);
   padding: 14px 16px;
 }
 
 .previa-whatsapp h4 {
   margin: 0 0 8px;
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .previa-whatsapp pre {
@@ -627,5 +688,5 @@ button.botao-whatsapp:disabled {
 .secao-extras h4 {
   margin: 0 0 6px;
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }

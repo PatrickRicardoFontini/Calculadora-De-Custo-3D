@@ -150,7 +150,7 @@ export function Estoque() {
 
   return (
     <div className="pagina">
-      <h2>Estoque de Filamentos</h2>
+      <h1>Estoque de Filamentos</h1>
 
       <form className="formulario" onSubmit={handleSubmit}>
         <div className="campo">
@@ -244,7 +244,7 @@ export function Estoque() {
             onChange={(e) => atualizarCampo("estoqueMinimoG", e.target.value)}
           />
         </div>
-        <button type="submit" disabled={enviando}>
+        <button type="submit" className="botao-primario" disabled={enviando}>
           {enviando ? "Salvando..." : "Cadastrar filamento"}
         </button>
       </form>
@@ -256,7 +256,7 @@ export function Estoque() {
 
       {erro && <p className="erro">{erro}</p>}
 
-      <h3>Filamentos cadastrados</h3>
+      <h2>Filamentos cadastrados</h2>
       {carregando ? (
         <p>Carregando...</p>
       ) : filamentos.length === 0 ? (
@@ -286,13 +286,13 @@ export function Estoque() {
                     <td>{f.tipo}</td>
                     <td>{f.cor}</td>
                     <td>{f.marca || "—"}</td>
-                    <td>{f.precoPorGrama ? `R$ ${parseFloat(f.precoPorGrama).toFixed(4)}` : "—"}</td>
-                    <td>{parseFloat(f.pesoTotalG).toFixed(0)} g</td>
+                    <td className="numero">{f.precoPorGrama ? `R$ ${parseFloat(f.precoPorGrama).toFixed(4)}` : "—"}</td>
+                    <td className="numero">{parseFloat(f.pesoTotalG).toFixed(0)} g</td>
                     <td>
-                      {parseFloat(f.pesoAtualG).toFixed(0)} g
+                      <span className="numero">{parseFloat(f.pesoAtualG).toFixed(0)} g</span>
                       {abaixoDoMinimo && <span className="badge-alerta"> abaixo do mínimo</span>}
                     </td>
-                    <td>{parseFloat(f.estoqueMinimoG).toFixed(0)} g</td>
+                    <td className="numero">{parseFloat(f.estoqueMinimoG).toFixed(0)} g</td>
                     <td className="celula-acoes">
                       <button className="botao-secundario" onClick={() => abrirReabastecer(f.id)}>
                         Reabastecer
@@ -327,7 +327,11 @@ export function Estoque() {
                             value={precoReabastecer}
                             onChange={(e) => setPrecoReabastecer(e.target.value)}
                           />
-                          <button disabled={processando} onClick={() => confirmarReabastecimento(f.id)}>
+                          <button
+                            className="botao-primario"
+                            disabled={processando}
+                            onClick={() => confirmarReabastecimento(f.id)}
+                          >
                             Confirmar
                           </button>
                           <button className="botao-secundario" onClick={() => setPainel(null)}>
@@ -352,9 +356,11 @@ export function Estoque() {
                                   <span className={`badge-movimento badge-${m.tipo.toLowerCase()}`}>
                                     {m.tipo === "ENTRADA" ? "Entrada" : "Saída"}
                                   </span>{" "}
-                                  {parseFloat(m.quantidadeG).toFixed(0)}g
-                                  {m.precoPorKg && ` (R$ ${parseFloat(m.precoPorKg).toFixed(2)}/kg)`} —{" "}
-                                  {new Date(m.data).toLocaleString("pt-BR")}
+                                  <span className="numero">
+                                    {parseFloat(m.quantidadeG).toFixed(0)}g
+                                    {m.precoPorKg && ` (R$ ${parseFloat(m.precoPorKg).toFixed(2)}/kg)`}
+                                  </span>{" "}
+                                  — {new Date(m.data).toLocaleString("pt-BR")}
                                 </li>
                               ))}
                             </ul>

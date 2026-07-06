@@ -54,7 +54,7 @@ export function Login({ aoAutenticar, aoMudarParaRegistro }: LoginProps) {
               onChange={(e) => setSenha(e.target.value)}
             />
           </div>
-          <button type="submit" disabled={enviando}>
+          <button type="submit" className="botao-primario" disabled={enviando}>
             {enviando ? "Entrando..." : "Entrar"}
           </button>
         </form>

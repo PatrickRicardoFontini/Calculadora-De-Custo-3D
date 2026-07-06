@@ -1,29 +1,76 @@
 :root {
-  --text: #2a2a2a;
-  --text-muted: #6b6b6b;
-  --bg: #f7f7f8;
-  --card-bg: #ffffff;
-  --border: #dcdce0;
-  --accent: #3b6ef6;
-  --accent-hover: #2d55c7;
-  --danger: #c0392b;
-  --danger-bg: #fdecea;
-  --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --card-border-width: 3px;
+  --card-radius: 14px;
+  --card-shadow: 4px 4px 0 var(--border);
 
-  font-family: var(--sans);
-  color: var(--text);
-  background: var(--bg);
+  --font-titulo: "Fredoka", sans-serif;
+  --font-corpo: "IBM Plex Sans", sans-serif;
+  --font-numero: "Space Mono", monospace;
+}
+
+:root[data-theme="light"] {
+  --bg: #E9E7E2;
+  --surface: #FFFFFF;
+  --border: #2A3B2E;
+  --text-primary: #2A3B2E;
+  --text-secondary: #6B7A6D;
+  --green: #2FB854;
+  --green-dim: #DDF2E1;
+  --green-text-on-dim: #197A34;
+  --gold: #FFC93C;
+  --gold-dim: #FFF3CC;
+  --gold-text-on-dim: #8A6800;
+  --danger: #E85A4F;
+  --danger-dim: #FCE1DE;
+  --danger-text-on-dim: #A8302A;
+}
+
+:root[data-theme="dark"] {
+  --bg: #1C1F1E;
+  --surface: #262B29;
+  --border: #3A423E;
+  --text-primary: #E8EDE9;
+  --text-secondary: #8A968C;
+  --green: #3DDC6E;
+  --green-dim: #17301F;
+  --green-text-on-dim: #3DDC6E;
+  --gold: #FFC93C;
+  --gold-dim: #362B10;
+  --gold-text-on-dim: #FFC93C;
+  --danger: #FF6B5C;
+  --danger-dim: #3A1E19;
+  --danger-text-on-dim: #FF6B5C;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
 }
 
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-corpo);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-titulo);
+  font-weight: 600;
+}
+
 button {
-  font-family: inherit;
+  font-family: var(--font-corpo);
   cursor: pointer;
+}
+
+.numero {
+  font-family: var(--font-numero);
+  font-weight: 700;
 }

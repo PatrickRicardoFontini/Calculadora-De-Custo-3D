@@ -60,7 +60,7 @@ export function Registro({ aoAutenticar, aoMudarParaLogin }: RegistroProps) {
               onChange={(e) => setSenha(e.target.value)}
             />
           </div>
-          <button type="submit" disabled={enviando}>
+          <button type="submit" className="botao-primario" disabled={enviando}>
             {enviando ? "Criando conta..." : "Criar conta"}
           </button>
         </form>

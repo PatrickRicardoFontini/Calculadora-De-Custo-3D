@@ -162,7 +162,7 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
 
   return (
     <div className="pagina">
-      <h2>Calculadora de Custo</h2>
+      <h1>Calculadora de Custo</h1>
 
       {filamentos.length === 0 ? (
         <p>Cadastre um filamento no estoque antes de calcular um orçamento.</p>
@@ -259,7 +259,7 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
               onChange={(e) => atualizarCampo("margemPercentual", e.target.value)}
             />
           </div>
-          <button type="submit" disabled={calculando}>
+          <button type="submit" className="botao-primario" disabled={calculando}>
             {calculando ? "Calculando..." : "Calcular"}
           </button>
         </form>
@@ -269,42 +269,42 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
 
       {resultado && (
         <div className="resultado">
-          <h3>Detalhamento</h3>
+          <h2>Detalhamento</h2>
           <table className="tabela">
             <tbody>
               <tr>
                 <td>Preço por grama</td>
-                <td>R$ {resultado.detalhamento.precoPorGrama.toFixed(4)}</td>
+                <td className="numero">R$ {resultado.detalhamento.precoPorGrama.toFixed(4)}</td>
               </tr>
               <tr>
                 <td>Custo do filamento</td>
-                <td>R$ {resultado.detalhamento.custoFilamento.toFixed(2)}</td>
+                <td className="numero">R$ {resultado.detalhamento.custoFilamento.toFixed(2)}</td>
               </tr>
               <tr>
                 <td>Custo de energia</td>
-                <td>R$ {resultado.detalhamento.custoEnergia.toFixed(2)}</td>
+                <td className="numero">R$ {resultado.detalhamento.custoEnergia.toFixed(2)}</td>
               </tr>
               <tr>
                 <td>Depreciação</td>
-                <td>R$ {resultado.detalhamento.custoDepreciacao.toFixed(2)}</td>
+                <td className="numero">R$ {resultado.detalhamento.custoDepreciacao.toFixed(2)}</td>
               </tr>
               <tr>
                 <td>Subtotal</td>
-                <td>R$ {resultado.detalhamento.subtotal.toFixed(2)}</td>
+                <td className="numero">R$ {resultado.detalhamento.subtotal.toFixed(2)}</td>
               </tr>
               <tr>
                 <td>Margem aplicada</td>
-                <td>{resultado.detalhamento.margemPercentual}%</td>
+                <td className="numero">{resultado.detalhamento.margemPercentual}%</td>
               </tr>
               <tr className="linha-total">
                 <td>Valor final</td>
-                <td>R$ {resultado.detalhamento.valorFinal.toFixed(2)}</td>
+                <td className="numero">R$ {resultado.detalhamento.valorFinal.toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
 
           <div className="secao-salvar-orcamento">
-            <h3>Salvar como orçamento</h3>
+            <h2>Salvar como orçamento</h2>
             <form className="formulario" onSubmit={handleSalvarOrcamento}>
               <div className="campo">
                 <label htmlFor="nomeOrcamento">Nome do orçamento</label>
@@ -369,7 +369,7 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
                   <ul className="lista-extras">
                     {extras.map((item, indice) => (
                       <li key={indice}>
-                        {item.descricao} — R$ {item.valorCusto.toFixed(2)}
+                        {item.descricao} — <span className="numero">R$ {item.valorCusto.toFixed(2)}</span>
                         <button type="button" className="botao-perigo" onClick={() => removerExtraLocal(indice)}>
                           Remover
                         </button>
@@ -411,13 +411,14 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
 
               {extras.length > 0 && (
                 <p className="detalhe-secundario">
-                  Custo dos extras: R$ {custoTotalExtras.toFixed(2)} · Com margem ({margemExtrasNum}%): R${" "}
-                  {valorExtrasComMargem.toFixed(2)} · Valor final com extras: R${" "}
-                  {(resultado.detalhamento.valorFinal + valorExtrasComMargem).toFixed(2)}
+                  Custo dos extras: <span className="numero">R$ {custoTotalExtras.toFixed(2)}</span> · Com margem (
+                  <span className="numero">{margemExtrasNum}%</span>):{" "}
+                  <span className="numero">R$ {valorExtrasComMargem.toFixed(2)}</span> · Valor final com extras:{" "}
+                  <span className="numero">R$ {(resultado.detalhamento.valorFinal + valorExtrasComMargem).toFixed(2)}</span>
                 </p>
               )}
 
-              <button type="submit" disabled={salvando}>
+              <button type="submit" className="botao-primario" disabled={salvando}>
                 {salvando ? "Salvando..." : "Salvar como orçamento"}
               </button>
             </form>

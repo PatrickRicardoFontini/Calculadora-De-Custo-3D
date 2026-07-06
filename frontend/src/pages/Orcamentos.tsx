@@ -190,7 +190,7 @@ export function Orcamentos() {
 
   return (
     <div className="pagina">
-      <h2>Orçamentos</h2>
+      <h1>Orçamentos</h1>
 
       <div className="filtros-status">
         {(["TODOS", "PENDENTE", "ACEITO", "RECUSADO"] as Filtro[]).map((opcao) => (
@@ -226,7 +226,7 @@ export function Orcamentos() {
                     {editandoNomeId === orcamento.id ? (
                       <span className="edicao-nome" onClick={(e) => e.stopPropagation()}>
                         <input value={nomeEditado} onChange={(e) => setNomeEditado(e.target.value)} />
-                        <button disabled={processando} onClick={() => salvarNome(orcamento.id)}>
+                        <button className="botao-primario" disabled={processando} onClick={() => salvarNome(orcamento.id)}>
                           Salvar
                         </button>
                         <button className="botao-secundario" onClick={() => setEditandoNomeId(null)}>
@@ -252,8 +252,8 @@ export function Orcamentos() {
                       {orcamento.nome && <>· {orcamento.cliente.nome} </>}
                       · {orcamento.filamento.tipo} {orcamento.filamento.cor}
                       {orcamento.filamento.marca ? ` (${orcamento.filamento.marca})` : ""} ·{" "}
-                      {parseFloat(orcamento.pesoUsadoG).toFixed(0)}g ·{" "}
-                      {parseFloat(orcamento.horasImpressao).toFixed(1)}h
+                      <span className="numero">{parseFloat(orcamento.pesoUsadoG).toFixed(0)}g</span> ·{" "}
+                      <span className="numero">{parseFloat(orcamento.horasImpressao).toFixed(1)}h</span>
                     </span>
                   </div>
                   <span className={`badge-status badge-${orcamento.status.toLowerCase()}`}>
@@ -271,7 +271,7 @@ export function Orcamentos() {
                         value={valorEditado}
                         onChange={(e) => setValorEditado(e.target.value)}
                       />
-                      <button disabled={processando} onClick={() => salvarValor(orcamento.id)}>
+                      <button className="botao-primario" disabled={processando} onClick={() => salvarValor(orcamento.id)}>
                         Salvar
                       </button>
                       <button className="botao-secundario" onClick={() => setEditandoId(null)}>
@@ -280,9 +280,12 @@ export function Orcamentos() {
                     </div>
                   ) : (
                     <p className="valor-atual">
-                      Valor atual: <strong>R$ {parseFloat(orcamento.valorAtual).toFixed(2)}</strong>
+                      Valor atual: <strong className="numero">R$ {parseFloat(orcamento.valorAtual).toFixed(2)}</strong>
                       {orcamento.valorAtual !== orcamento.valorCalculado && (
-                        <span className="detalhe-secundario"> (calculado: R$ {parseFloat(orcamento.valorCalculado).toFixed(2)})</span>
+                        <span className="detalhe-secundario">
+                          {" "}
+                          (calculado: <span className="numero">R$ {parseFloat(orcamento.valorCalculado).toFixed(2)}</span>)
+                        </span>
                       )}
                     </p>
                   )}
@@ -292,7 +295,7 @@ export function Orcamentos() {
                       <button className="botao-secundario" disabled={processando} onClick={() => iniciarEdicao(orcamento)}>
                         Editar valor
                       </button>
-                      <button disabled={processando} onClick={() => mudarStatus(orcamento.id, "ACEITO")}>
+                      <button className="botao-primario" disabled={processando} onClick={() => mudarStatus(orcamento.id, "ACEITO")}>
                         Aceitar
                       </button>
                       <button
@@ -327,7 +330,7 @@ export function Orcamentos() {
                         <ul className="lista-extras">
                           {orcamento.extras.map((ex) => (
                             <li key={ex.id}>
-                              {ex.descricao} — R$ {parseFloat(ex.valorCusto).toFixed(2)}
+                              {ex.descricao} — <span className="numero">R$ {parseFloat(ex.valorCusto).toFixed(2)}</span>
                               {orcamento.status === "PENDENTE" && (
                                 <button
                                   className="botao-perigo"
@@ -376,7 +379,8 @@ export function Orcamentos() {
                       <ul>
                         {orcamento.historico.map((h) => (
                           <li key={h.id}>
-                            R$ {parseFloat(h.valor).toFixed(2)} — {new Date(h.registradoEm).toLocaleString("pt-BR")}
+                            <span className="numero">R$ {parseFloat(h.valor).toFixed(2)}</span> —{" "}
+                            {new Date(h.registradoEm).toLocaleString("pt-BR")}
                           </li>
                         ))}
                       </ul>
