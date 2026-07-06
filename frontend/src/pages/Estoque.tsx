@@ -262,7 +262,7 @@ export function Estoque() {
       ) : filamentos.length === 0 ? (
         <p>Nenhum filamento cadastrado ainda.</p>
       ) : (
-        <table className="tabela">
+        <table className="tabela tabela-cartoes">
           <thead>
             <tr>
               <th>Tipo</th>
@@ -283,16 +283,18 @@ export function Estoque() {
               return (
                 <Fragment key={f.id}>
                   <tr className={abaixoDoMinimo ? "linha-alerta" : ""}>
-                    <td>{f.tipo}</td>
-                    <td>{f.cor}</td>
-                    <td>{f.marca || "—"}</td>
-                    <td className="numero">{f.precoPorGrama ? `R$ ${parseFloat(f.precoPorGrama).toFixed(4)}` : "—"}</td>
-                    <td className="numero">{parseFloat(f.pesoTotalG).toFixed(0)} g</td>
-                    <td>
+                    <td data-label="Tipo">{f.tipo}</td>
+                    <td data-label="Cor">{f.cor}</td>
+                    <td data-label="Marca">{f.marca || "—"}</td>
+                    <td className="numero" data-label="Preço/g">
+                      {f.precoPorGrama ? `R$ ${parseFloat(f.precoPorGrama).toFixed(4)}` : "—"}
+                    </td>
+                    <td className="numero" data-label="Total comprado">{parseFloat(f.pesoTotalG).toFixed(0)} g</td>
+                    <td data-label="Peso atual">
                       <span className="numero">{parseFloat(f.pesoAtualG).toFixed(0)} g</span>
                       {abaixoDoMinimo && <span className="badge-alerta"> abaixo do mínimo</span>}
                     </td>
-                    <td className="numero">{parseFloat(f.estoqueMinimoG).toFixed(0)} g</td>
+                    <td className="numero" data-label="Estoque mínimo">{parseFloat(f.estoqueMinimoG).toFixed(0)} g</td>
                     <td className="celula-acoes">
                       <button className="botao-secundario" onClick={() => abrirReabastecer(f.id)}>
                         Reabastecer

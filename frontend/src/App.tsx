@@ -34,10 +34,23 @@ function App() {
   const [verificando, setVerificando] = useState(true);
   const [modoAuth, setModoAuth] = useState<"login" | "registro">("login");
   const [tema, setTema] = useState<Tema>(obterTemaInicial);
+  const [gavetaAberta, setGavetaAberta] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", tema);
   }, [tema]);
+
+  useEffect(() => {
+    document.body.style.overflow = gavetaAberta ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [gavetaAberta]);
+
+  function selecionarAba(item: Aba) {
+    setAba(item);
+    setGavetaAberta(false);
+  }
 
   function alternarTema() {
     setTema((atual) => {
@@ -86,14 +99,25 @@ function App() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <header className="barra-mobile">
+        <button className="botao-hamburguer" onClick={() => setGavetaAberta(true)} aria-label="Abrir menu">
+          <span />
+          <span />
+          <span />
+        </button>
+        <span className="titulo-barra-mobile">{ITENS_NAV.find((item) => item.aba === aba)?.rotulo}</span>
+      </header>
+
+      {gavetaAberta && <div className="overlay-gaveta" onClick={() => setGavetaAberta(false)} />}
+
+      <aside className={gavetaAberta ? "sidebar sidebar-aberta" : "sidebar"}>
         <div className="logo">calc3d</div>
         <nav className="nav-principal">
           {ITENS_NAV.map((item) => (
             <button
               key={item.aba}
               className={aba === item.aba ? "nav-item nav-item-ativo" : "nav-item"}
-              onClick={() => setAba(item.aba)}
+              onClick={() => selecionarAba(item.aba)}
             >
               {item.rotulo}
             </button>

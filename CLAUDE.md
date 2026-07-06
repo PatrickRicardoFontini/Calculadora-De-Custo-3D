@@ -53,6 +53,40 @@ pro WhatsApp.
   (`.botao-perigo`, vermelho preenchido, tipo Excluir/Recusar/Remover) — mesma
   borda/canto do cartão nos três casos
 
+## Responsividade — vale pra toda tela nova daqui pra frente
+
+- Breakpoint único em 768px (`@media (max-width: 768px)`), sem variáveis CSS
+  (custom properties não funcionam dentro de condição de media query, tem que ser
+  literal em cada regra)
+- Navegação: abaixo do breakpoint, a `.sidebar` some por padrão e vira gaveta —
+  `position: fixed`, `transform: translateX(-100%)`, desliza pra dentro com a classe
+  `.sidebar-aberta` quando aberta, com um `.overlay-gaveta` escurecido atrás que fecha
+  a gaveta ao tocar. Uma `.barra-mobile` fixa aparece no topo só nesse breakpoint, com
+  botão hamburguer e o rótulo da aba atual. **É a mesma `<aside className="sidebar">`
+  e o mesmo `<nav className="nav-principal">` do desktop, só muda de posição/exibição
+  via CSS e uma classe condicional — nunca duplicar esse componente.** Selecionar um
+  item do menu fecha a gaveta (`selecionarAba` em `App.tsx`). Scroll do body trava
+  (`document.body.style.overflow = "hidden"`) enquanto a gaveta está aberta
+- Qualquer grid/formulário lado a lado vira 1 coluna abaixo do breakpoint: `.formulario`
+  (grid principal usado em todo cadastro) e `.grupo-config` (bloco de configuração da
+  Máquinas) têm `grid-template-columns: 1fr` nesse breakpoint. Linhas flexíveis com
+  múltiplos campos/botões (`.painel-inline`, `.edicao-valor`, `.edicao-nome`,
+  `.filtros-status`, `.card-orcamento-cabecalho`) têm `flex-wrap: wrap` sempre (não só
+  no breakpoint), e os inputs de largura fixa dentro delas têm `max-width: 100%` de
+  segurança
+- Texto e containers: `overflow-wrap: break-word` está no `body` (`index.css`) e vale
+  por herança pra qualquer texto novo, não precisa repetir por componente — só reforçar
+  explicitamente em `pre`/textos que já têm regra própria de `white-space`
+- Tabela de filamentos (Estoque) vira cartão empilhado abaixo do breakpoint: classe
+  `.tabela-cartoes` + atributo `data-label` em cada `<td>` (mostrado via `::before` no
+  CSS), `<thead>` escondido, cada `<tr>` vira um cartão com borda/sombra própria — essa
+  é a tabela mais citada como "caso especial", as outras (Máquinas, Receita,
+  detalhamento da Calculadora) usam o fallback mais simples abaixo
+- Qualquer outra tabela (`.tabela`) só ganha scroll horizontal controlado abaixo do
+  breakpoint: envolver em `<div className="tabela-scroll">`, que aplica
+  `overflow-x: auto` e `white-space: nowrap` nas células só nesse breakpoint — não
+  força `min-width`, deixa o conteúdo real decidir se cabe ou não
+
 ## Decisões arquiteturais — não reverter sem avisar o dono do projeto
 
 - `Filamento.precoPorGrama` é um campo direto, não derivado de preço/peso total.
@@ -119,6 +153,9 @@ pro WhatsApp.
 9. Identidade visual "cinza-verde" com tema claro/escuro alternável, aplicada em todas
    as telas (login, registro, estoque, calculadora, orçamentos, máquinas, receita),
    com barra lateral de navegação substituindo as abas horizontais
+10. Responsividade completa com breakpoint único em 768px: navegação em gaveta no
+    mobile reaproveitando o mesmo componente do desktop, formulários/grids empilhados,
+    tabela de filamentos em cartões e demais tabelas com scroll horizontal controlado
 
 ## Pendente
 

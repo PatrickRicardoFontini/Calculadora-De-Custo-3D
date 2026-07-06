@@ -270,38 +270,40 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
       {resultado && (
         <div className="resultado">
           <h2>Detalhamento</h2>
-          <table className="tabela">
-            <tbody>
-              <tr>
-                <td>Preço por grama</td>
-                <td className="numero">R$ {resultado.detalhamento.precoPorGrama.toFixed(4)}</td>
-              </tr>
-              <tr>
-                <td>Custo do filamento</td>
-                <td className="numero">R$ {resultado.detalhamento.custoFilamento.toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td>Custo de energia</td>
-                <td className="numero">R$ {resultado.detalhamento.custoEnergia.toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td>Depreciação</td>
-                <td className="numero">R$ {resultado.detalhamento.custoDepreciacao.toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td>Subtotal</td>
-                <td className="numero">R$ {resultado.detalhamento.subtotal.toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td>Margem aplicada</td>
-                <td className="numero">{resultado.detalhamento.margemPercentual}%</td>
-              </tr>
-              <tr className="linha-total">
-                <td>Valor final</td>
-                <td className="numero">R$ {resultado.detalhamento.valorFinal.toFixed(2)}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="tabela-scroll">
+            <table className="tabela">
+              <tbody>
+                <tr>
+                  <td>Preço por grama</td>
+                  <td className="numero">R$ {resultado.detalhamento.precoPorGrama.toFixed(4)}</td>
+                </tr>
+                <tr>
+                  <td>Custo do filamento</td>
+                  <td className="numero">R$ {resultado.detalhamento.custoFilamento.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Custo de energia</td>
+                  <td className="numero">R$ {resultado.detalhamento.custoEnergia.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Depreciação</td>
+                  <td className="numero">R$ {resultado.detalhamento.custoDepreciacao.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Subtotal</td>
+                  <td className="numero">R$ {resultado.detalhamento.subtotal.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Margem aplicada</td>
+                  <td className="numero">{resultado.detalhamento.margemPercentual}%</td>
+                </tr>
+                <tr className="linha-total">
+                  <td>Valor final</td>
+                  <td className="numero">R$ {resultado.detalhamento.valorFinal.toFixed(2)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <div className="secao-salvar-orcamento">
             <h2>Salvar como orçamento</h2>

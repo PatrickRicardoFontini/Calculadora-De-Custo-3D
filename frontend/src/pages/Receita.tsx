@@ -87,24 +87,26 @@ export function Receita() {
           {mesesAnteriores.length === 0 ? (
             <p>Nenhuma venda registrada em meses anteriores.</p>
           ) : (
-            <table className="tabela">
-              <thead>
-                <tr>
-                  <th>Mês</th>
-                  <th>Total faturado</th>
-                  <th>Vendas</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mesesAnteriores.map((m) => (
-                  <tr key={m.mes}>
-                    <td>{formatarMes(m.mes)}</td>
-                    <td className="numero">R$ {m.totalVendas.toFixed(2)}</td>
-                    <td className="numero">{m.quantidadeVendas}</td>
+            <div className="tabela-scroll">
+              <table className="tabela">
+                <thead>
+                  <tr>
+                    <th>Mês</th>
+                    <th>Total faturado</th>
+                    <th>Vendas</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {mesesAnteriores.map((m) => (
+                    <tr key={m.mes}>
+                      <td>{formatarMes(m.mes)}</td>
+                      <td className="numero">R$ {m.totalVendas.toFixed(2)}</td>
+                      <td className="numero">{m.quantidadeVendas}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
 
           <h2 className="titulo-historico">Histórico de vendas</h2>
@@ -126,41 +128,43 @@ export function Receita() {
           ) : vendas.length === 0 ? (
             <p>Nenhuma venda registrada em {formatarMes(mesSelecionado)}.</p>
           ) : (
-            <table className="tabela">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Cliente</th>
-                  <th>Filamento</th>
-                  <th>Peso</th>
-                  <th>Horas</th>
-                  <th>Valor</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vendas.map((v) => (
-                  <tr key={v.id}>
-                    <td>{new Date(v.dataVenda).toLocaleString("pt-BR")}</td>
-                    <td>{v.clienteNome}</td>
-                    <td>
-                      {v.filamentoTipo} {v.filamentoCor}
-                      {v.filamentoMarca ? ` (${v.filamentoMarca})` : ""}
-                    </td>
-                    <td className="numero">{v.pesoUsadoG.toFixed(0)} g</td>
-                    <td className="numero">{v.horasImpressao.toFixed(1)} h</td>
-                    <td>
-                      <span className="numero">R$ {v.valorFinal.toFixed(2)}</span>
-                      {v.valorFinal !== v.valorCalculado && (
-                        <span className="detalhe-secundario">
-                          {" "}
-                          (calculado: <span className="numero">R$ {v.valorCalculado.toFixed(2)}</span>)
-                        </span>
-                      )}
-                    </td>
+            <div className="tabela-scroll">
+              <table className="tabela">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                    <th>Filamento</th>
+                    <th>Peso</th>
+                    <th>Horas</th>
+                    <th>Valor</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {vendas.map((v) => (
+                    <tr key={v.id}>
+                      <td>{new Date(v.dataVenda).toLocaleString("pt-BR")}</td>
+                      <td>{v.clienteNome}</td>
+                      <td>
+                        {v.filamentoTipo} {v.filamentoCor}
+                        {v.filamentoMarca ? ` (${v.filamentoMarca})` : ""}
+                      </td>
+                      <td className="numero">{v.pesoUsadoG.toFixed(0)} g</td>
+                      <td className="numero">{v.horasImpressao.toFixed(1)} h</td>
+                      <td>
+                        <span className="numero">R$ {v.valorFinal.toFixed(2)}</span>
+                        {v.valorFinal !== v.valorCalculado && (
+                          <span className="detalhe-secundario">
+                            {" "}
+                            (calculado: <span className="numero">R$ {v.valorCalculado.toFixed(2)}</span>)
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </>
       )}

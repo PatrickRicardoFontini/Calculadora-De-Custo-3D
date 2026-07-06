@@ -320,46 +320,48 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
       ) : maquinas.length === 0 ? (
         <p>Nenhuma máquina cadastrada ainda.</p>
       ) : (
-        <table className="tabela">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Potência</th>
-              <th>Preço de compra</th>
-              <th>Vida útil</th>
-              <th>Depreciação/h</th>
-              <th>Energia/h</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {maquinas.map((m) => {
-              const depreciacaoHora = parseFloat(m.precoCompra) / parseFloat(m.vidaUtilHoras);
-              const energiaHora = usuario.precoKwh
-                ? (parseFloat(m.potenciaWatts) / 1000) * parseFloat(usuario.precoKwh)
-                : null;
+        <div className="tabela-scroll">
+          <table className="tabela">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Potência</th>
+                <th>Preço de compra</th>
+                <th>Vida útil</th>
+                <th>Depreciação/h</th>
+                <th>Energia/h</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {maquinas.map((m) => {
+                const depreciacaoHora = parseFloat(m.precoCompra) / parseFloat(m.vidaUtilHoras);
+                const energiaHora = usuario.precoKwh
+                  ? (parseFloat(m.potenciaWatts) / 1000) * parseFloat(usuario.precoKwh)
+                  : null;
 
-              return (
-                <tr key={m.id}>
-                  <td>{m.nome}</td>
-                  <td className="numero">{parseFloat(m.potenciaWatts).toFixed(0)} W</td>
-                  <td className="numero">R$ {parseFloat(m.precoCompra).toFixed(2)}</td>
-                  <td className="numero">{parseFloat(m.vidaUtilHoras).toFixed(0)} h</td>
-                  <td className="numero">R$ {depreciacaoHora.toFixed(4)}</td>
-                  <td className="numero">{energiaHora !== null ? `R$ ${energiaHora.toFixed(4)}` : "—"}</td>
-                  <td className="celula-acoes">
-                    <button className="botao-secundario" onClick={() => iniciarEdicao(m)}>
-                      Editar
-                    </button>
-                    <button className="botao-perigo" onClick={() => handleExcluir(m.id)}>
-                      Excluir
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                return (
+                  <tr key={m.id}>
+                    <td>{m.nome}</td>
+                    <td className="numero">{parseFloat(m.potenciaWatts).toFixed(0)} W</td>
+                    <td className="numero">R$ {parseFloat(m.precoCompra).toFixed(2)}</td>
+                    <td className="numero">{parseFloat(m.vidaUtilHoras).toFixed(0)} h</td>
+                    <td className="numero">R$ {depreciacaoHora.toFixed(4)}</td>
+                    <td className="numero">{energiaHora !== null ? `R$ ${energiaHora.toFixed(4)}` : "—"}</td>
+                    <td className="celula-acoes">
+                      <button className="botao-secundario" onClick={() => iniciarEdicao(m)}>
+                        Editar
+                      </button>
+                      <button className="botao-perigo" onClick={() => handleExcluir(m.id)}>
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

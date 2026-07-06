@@ -86,6 +86,8 @@ body {
   background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-corpo);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 h1,
