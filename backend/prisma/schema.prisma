@@ -16,6 +16,8 @@ model Usuario {
   margemPadrao       Decimal?    @db.Decimal(5, 2)
   margemExtrasPadrao Decimal?    @db.Decimal(5, 2)
   templateWhatsapp   String?     @db.Text
+  resetTokenHash     String?
+  resetTokenExpira   DateTime?
   criadoEm           DateTime    @default(now())
 
   clientes   Cliente[]

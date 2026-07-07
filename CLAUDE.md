@@ -181,6 +181,33 @@ pro WhatsApp.
   de um hash de senha inválido) — email já cadastrado sempre retorna 409, sem exceção. A
   conta placeholder do seed (`default@calculadora.local`) serve só pra inspecionar dados
   direto no banco, não loga nem aceita registro por cima dela
+- Campo de senha (visualizar/esconder + indicador de força) é um componente único
+  reutilizável, `CampoSenha` (`frontend/src/components/CampoSenha.tsx`), usado em Login,
+  Registro e Redefinir senha — nunca duplicar o campo cru nessas telas. O indicador de
+  força (`lib/forcaSenha.ts`) é uma heurística própria (tamanho + variedade de
+  caractere), só visual via prop `mostrarForca`; não bloqueia envio, o mínimo de 8
+  caracteres continua sendo a única regra que impede
+- Redefinição de senha: `Usuario.resetTokenHash`/`resetTokenExpira` guardam o hash
+  SHA-256 de um token aleatório de 32 bytes (não o token em si, e não é bcrypt — o token
+  já é alta entropia, diferente de senha escolhida por humano), com validade de 1 hora.
+  `POST /auth/esqueci-senha` sempre responde a mesma mensagem genérica, exista ou não o
+  email, pra não revelar quais emails estão cadastrados; só gera token e manda email
+  quando o usuário existe de verdade. `POST /auth/redefinir-senha` confere o hash, a
+  validade e limpa os dois campos depois de trocar a senha (com bcrypt, como já era),
+  invalidando o token pra sempre — não existe reuso. `esqueci-senha` compartilha o
+  limitador de tentativas do login/registro (mesma instância), já que também é uma
+  superfície de abuso (spam de email, cota diária do Resend)
+- Email transacional via Resend (`lib/email.ts`), remetente configurável por
+  `RESEND_FROM_EMAIL` (default `onboarding@resend.dev`, que funciona sem verificar
+  domínio mas só entrega pro email da própria conta Resend — trocar por um remetente de
+  domínio verificado antes de abrir pra outros makers, senão o email de redefinição não
+  chega pra ninguém além do dono da conta Resend). O link do email usa `ALLOWED_ORIGIN`
+  pra montar a URL do frontend (mesma variável do CORS, já que representa a mesma
+  origem — sem criar uma segunda variável redundante)
+- O link de redefinição aponta pra uma URL de verdade (`/redefinir-senha?token=...`),
+  não pra uma rota de um router client-side (o projeto não tem um). `App.tsx` detecta
+  esse caminho no primeiro carregamento (`window.location.pathname`) pra abrir a tela
+  direto, e limpa a URL (`history.replaceState`) ao voltar pro login
 
 ## Já construído e testado
 
@@ -219,13 +246,22 @@ pro WhatsApp.
     login/registro, `senhaHash` nunca exposto (`USUARIO_SELECT_SEGURO`), confirmação de
     que não existe SQL cru em lugar nenhum (só Prisma), e validação de entrada (sem
     número negativo em campo de preço/peso/margem, limites de tamanho de texto)
+13. Campo de senha com visualizar/esconder e indicador de força (fraca/média/forte),
+    componente `CampoSenha` reutilizado em Login, Registro e Redefinir senha
+14. Recuperação de senha: link "Esqueci minha senha" no Login, email de verdade via
+    Resend com link de token de uso único (validade de 1 hora, resposta sempre genérica
+    pra não revelar quais emails existem), tela de redefinir senha usando o mesmo
+    `CampoSenha`
 
 ## Pendente
 
-- Ainda sem verificação de email, recuperação de senha
+- Ainda sem verificação de email
 - Ainda sem validação com outros makers reais (decisão consciente do dono do projeto até
   agora, priorizando funcionalidade)
 - Ainda sem deploy
+- Antes de abrir pra outros makers de verdade: verificar um domínio próprio no Resend e
+  trocar `RESEND_FROM_EMAIL` — sem isso, o email de redefinição de senha só chega pro
+  email da própria conta Resend cadastrada (`onboarding@resend.dev` é só pra teste)
 
 ## Convenções
 

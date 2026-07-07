@@ -62,6 +62,24 @@ export async function login(email: string, senha: string): Promise<RespostaAuth>
   return tratarResposta(resposta);
 }
 
+export async function esqueciSenha(email: string): Promise<{ mensagem: string }> {
+  const resposta = await fetch(`${API_URL}/auth/esqueci-senha`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function redefinirSenha(token: string, novaSenha: string): Promise<{ mensagem: string }> {
+  const resposta = await fetch(`${API_URL}/auth/redefinir-senha`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, novaSenha }),
+  });
+  return tratarResposta(resposta);
+}
+
 export async function buscarUsuarioAtual(): Promise<Usuario> {
   const resposta = await fetch(`${API_URL}/auth/me`, { headers: headersComAuth() });
   return tratarResposta(resposta);

@@ -310,6 +310,92 @@
   resize: vertical;
 }
 
+.campo-senha-wrapper {
+  position: relative;
+  display: flex;
+}
+
+.campo-senha-wrapper input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 40px;
+}
+
+.botao-visibilidade-senha {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.botao-visibilidade-senha:hover {
+  color: var(--text-primary);
+}
+
+.indicador-forca-senha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.barra-forca-senha {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+}
+
+.barra-forca-senha span {
+  height: 4px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.badge-forca-senha {
+  font-family: var(--font-titulo);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.forca-fraca .barra-forca-senha span:nth-child(1) {
+  background: var(--danger);
+}
+
+.forca-fraca .badge-forca-senha {
+  background: var(--danger-dim);
+  color: var(--danger-text-on-dim);
+}
+
+.forca-media .barra-forca-senha span:nth-child(-n + 2) {
+  background: var(--gold);
+}
+
+.forca-media .badge-forca-senha {
+  background: var(--gold-dim);
+  color: var(--gold-text-on-dim);
+}
+
+.forca-forte .barra-forca-senha span {
+  background: var(--green);
+}
+
+.forca-forte .badge-forca-senha {
+  background: var(--green-dim);
+  color: var(--green-text-on-dim);
+}
+
 .botao-primario,
 .formulario-auth > button {
   grid-column: 1 / -1;

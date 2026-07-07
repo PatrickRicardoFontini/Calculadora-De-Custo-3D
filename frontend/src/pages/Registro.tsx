@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { registrar } from "../api/client";
 import { salvarToken } from "../lib/auth";
+import { CampoSenha } from "../components/CampoSenha";
 import type { Usuario } from "../types";
 
 interface RegistroProps {
@@ -49,17 +50,16 @@ export function Registro({ aoAutenticar, aoMudarParaLogin }: RegistroProps) {
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <div className="campo">
-            <label htmlFor="senha">Senha (mínimo 8 caracteres)</label>
-            <input
-              id="senha"
-              type="password"
-              required
-              minLength={8}
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-            />
-          </div>
+          <CampoSenha
+            id="senha"
+            label="Senha (mínimo 8 caracteres)"
+            value={senha}
+            onChange={setSenha}
+            required
+            minLength={8}
+            autoComplete="new-password"
+            mostrarForca
+          />
           <button type="submit" className="botao-primario" disabled={enviando}>
             {enviando ? "Criando conta..." : "Criar conta"}
           </button>

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
+import crypto from "node:crypto";
 import rateLimit from "express-rate-limit";
 import { prisma } from "../lib/prisma";
 import { gerarToken } from "../lib/jwt";
@@ -7,6 +8,7 @@ import { autenticacao } from "../middleware/autenticacao";
 import { asyncHandler } from "../lib/asyncHandler";
 import { USUARIO_SELECT_SEGURO, type UsuarioSeguro } from "../lib/usuarioSelect";
 import { MODELO_PADRAO_WHATSAPP, dadosDeExemplo, renderizarMensagemWhatsapp } from "../lib/mensagemWhatsapp";
+import { enviarEmailRedefinicaoSenha } from "../lib/email";
 
 export const authRouter = Router();
 
@@ -15,9 +17,17 @@ const SENHA_MAX_LENGTH = 128; // bcrypt ignora silenciosamente qualquer byte al�
 const NOME_MAX_LENGTH = 150;
 const EMAIL_MAX_LENGTH = 255;
 const TEMPLATE_WHATSAPP_MAX_LENGTH = 5000;
+const TOKEN_MAX_LENGTH = 256;
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Limite de tentativas por IP em login/registro, pra dificultar força bruta de senha
+const RESET_TOKEN_BYTES = 32;
+const RESET_TOKEN_VALIDADE_MS = 60 * 60 * 1000; // 1 hora
+// URL do frontend pra montar o link do email — mesma variável usada no CORS, já que
+// representa a mesma origem, sem precisar de uma segunda variável redundante no .env
+const FRONTEND_URL = process.env.ALLOWED_ORIGIN || "http://localhost:5173";
+
+// Limite de tentativas por IP em login/registro/esqueci-senha, pra dificultar força
+// bruta de senha e abuso de envio de email (o Resend tem cota diária)
 const limiteLoginRegistro = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -25,6 +35,10 @@ const limiteLoginRegistro = rateLimit({
   legacyHeaders: false,
   message: { erro: "Muitas tentativas. Aguarde alguns minutos antes de tentar de novo." },
 });
+
+function hashToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
 
 // Guarda defensiva: rejeita login com um erro genérico em vez de deixar bcrypt.compare
 // processar um hash malformado (por exemplo, a conta placeholder do prisma/seed.ts)
@@ -182,4 +196,70 @@ authRouter.post("/preview-whatsapp", autenticacao, asyncHandler(async (req, res)
 
   const mensagem = renderizarMensagemWhatsapp(template ?? MODELO_PADRAO_WHATSAPP, dadosDeExemplo());
   res.json({ mensagem });
+}));
+
+// POST /auth/esqueci-senha - gera um token de redefinição e manda por email, se o email existir
+authRouter.post("/esqueci-senha", limiteLoginRegistro, asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  // Resposta sempre igual, exista ou não o email: não revela quais emails estão cadastrados
+  const respostaGenerica = {
+    mensagem: "Se esse email existir na nossa base, você vai receber um link para redefinir a senha.",
+  };
+
+  if (!email || String(email).length > EMAIL_MAX_LENGTH) {
+    return res.json(respostaGenerica);
+  }
+
+  const usuario = await prisma.usuario.findUnique({ where: { email } });
+  if (usuario) {
+    const token = crypto.randomBytes(RESET_TOKEN_BYTES).toString("hex");
+    const resetTokenHash = hashToken(token);
+    const resetTokenExpira = new Date(Date.now() + RESET_TOKEN_VALIDADE_MS);
+
+    await prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { resetTokenHash, resetTokenExpira },
+    });
+
+    const link = `${FRONTEND_URL}/redefinir-senha?token=${token}`;
+    await enviarEmailRedefinicaoSenha(usuario.email, link);
+  }
+
+  res.json(respostaGenerica);
+}));
+
+// POST /auth/redefinir-senha - confere o token e troca a senha
+authRouter.post("/redefinir-senha", asyncHandler(async (req, res) => {
+  const { token, novaSenha } = req.body;
+
+  const erros: string[] = [];
+  if (!token || typeof token !== "string") {
+    erros.push("Campo obrigatório ausente: token");
+  } else if (token.length > TOKEN_MAX_LENGTH) {
+    erros.push("Campo 'token' inválido");
+  }
+  if (!novaSenha || String(novaSenha).length < SENHA_MIN_LENGTH) {
+    erros.push(`Senha deve ter pelo menos ${SENHA_MIN_LENGTH} caracteres`);
+  } else if (String(novaSenha).length > SENHA_MAX_LENGTH) {
+    erros.push(`Senha deve ter no máximo ${SENHA_MAX_LENGTH} caracteres`);
+  }
+  if (erros.length > 0) {
+    return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
+  }
+
+  const resetTokenHash = hashToken(token);
+  const usuario = await prisma.usuario.findFirst({ where: { resetTokenHash } });
+
+  if (!usuario || !usuario.resetTokenExpira || usuario.resetTokenExpira < new Date()) {
+    return res.status(400).json({ erro: "Token inválido ou expirado" });
+  }
+
+  const senhaHash = await bcrypt.hash(novaSenha, 10);
+  await prisma.usuario.update({
+    where: { id: usuario.id },
+    data: { senhaHash, resetTokenHash: null, resetTokenExpira: null },
+  });
+
+  res.json({ mensagem: "Senha redefinida com sucesso." });
 }));

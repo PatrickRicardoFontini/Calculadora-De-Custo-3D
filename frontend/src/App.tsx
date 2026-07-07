@@ -6,6 +6,8 @@ import { Receita } from "./pages/Receita";
 import { Maquinas } from "./pages/Maquinas";
 import { Login } from "./pages/Login";
 import { Registro } from "./pages/Registro";
+import { EsqueciSenha } from "./pages/EsqueciSenha";
+import { RedefinirSenha } from "./pages/RedefinirSenha";
 import { buscarUsuarioAtual } from "./api/client";
 import { limparToken, obterToken } from "./lib/auth";
 import type { Usuario } from "./types";
@@ -13,6 +15,13 @@ import "./App.css";
 
 type Aba = "estoque" | "calculadora" | "orcamentos" | "maquinas" | "receita";
 type Tema = "light" | "dark";
+type ModoAuth = "login" | "registro" | "esqueci-senha" | "redefinir-senha";
+
+// O link do email de redefinição aponta pra /redefinir-senha?token=... de verdade —
+// detecta esse caminho no primeiro carregamento pra abrir a tela certa direto
+function obterModoAuthInicial(): ModoAuth {
+  return window.location.pathname === "/redefinir-senha" ? "redefinir-senha" : "login";
+}
 
 const ITENS_NAV: { aba: Aba; rotulo: string }[] = [
   { aba: "estoque", rotulo: "Estoque" },
@@ -32,7 +41,7 @@ function App() {
   const [aba, setAba] = useState<Aba>("estoque");
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [verificando, setVerificando] = useState(true);
-  const [modoAuth, setModoAuth] = useState<"login" | "registro">("login");
+  const [modoAuth, setModoAuth] = useState<ModoAuth>(obterModoAuthInicial);
   const [tema, setTema] = useState<Tema>(obterTemaInicial);
   const [gavetaAberta, setGavetaAberta] = useState(false);
 
@@ -85,15 +94,32 @@ function App() {
     setAba("estoque");
   }
 
+  function voltarParaLogin() {
+    // Limpa o caminho/query de /redefinir-senha?token=... pra um refresh não reabrir a tela
+    window.history.replaceState({}, "", "/");
+    setModoAuth("login");
+  }
+
   if (verificando) {
     return <div className="tela-auth">Carregando...</div>;
   }
 
   if (!usuario) {
-    return modoAuth === "login" ? (
-      <Login aoAutenticar={setUsuario} aoMudarParaRegistro={() => setModoAuth("registro")} />
-    ) : (
-      <Registro aoAutenticar={setUsuario} aoMudarParaLogin={() => setModoAuth("login")} />
+    if (modoAuth === "registro") {
+      return <Registro aoAutenticar={setUsuario} aoMudarParaLogin={() => setModoAuth("login")} />;
+    }
+    if (modoAuth === "esqueci-senha") {
+      return <EsqueciSenha aoVoltarParaLogin={() => setModoAuth("login")} />;
+    }
+    if (modoAuth === "redefinir-senha") {
+      return <RedefinirSenha aoConcluir={voltarParaLogin} />;
+    }
+    return (
+      <Login
+        aoAutenticar={setUsuario}
+        aoMudarParaRegistro={() => setModoAuth("registro")}
+        aoMudarParaEsqueciSenha={() => setModoAuth("esqueci-senha")}
+      />
     );
   }
 
