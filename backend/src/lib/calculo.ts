@@ -33,6 +33,21 @@ export function somarCustoExtras(extras: { valorCusto: Prisma.Decimal | number |
   return extras.reduce((soma, extra) => soma + decimalToNumber(extra.valorCusto), 0);
 }
 
+export interface ItemFilamentoCalculo {
+  filamento: Filamento;
+  pesoUsadoG: number;
+}
+
+// Soma o custo de filamento de uma ou mais cores/materiais usados no mesmo orçamento
+export function calcularCustoFilamentoTotal(itens: ItemFilamentoCalculo[]): number {
+  return itens.reduce((soma, item) => {
+    if (item.filamento.precoPorGrama === null) {
+      throw new Error("Filamento sem precoPorGrama definido");
+    }
+    return soma + decimalToNumber(item.filamento.precoPorGrama) * item.pesoUsadoG;
+  }, 0);
+}
+
 // Margem dos extras é separada da margem principal: um item revendido não carrega o
 // mesmo markup do filamento/máquina
 export function calcularValorExtrasComMargem(custoTotalExtras: number, margemExtras: number): number {
@@ -43,14 +58,18 @@ export function calcularCusto(
   filamento: Filamento,
   entrada: EntradaCalculo,
   custoTotalExtras = 0,
-  margemExtras = 0
+  margemExtras = 0,
+  itensFilamentoExtras: ItemFilamentoCalculo[] = []
 ): DetalhamentoCalculo {
   if (filamento.precoPorGrama === null) {
     throw new Error("Filamento sem precoPorGrama definido");
   }
 
   const precoPorGrama = decimalToNumber(filamento.precoPorGrama);
-  const custoFilamento = precoPorGrama * entrada.pesoUsadoG;
+  const custoFilamento = calcularCustoFilamentoTotal([
+    { filamento, pesoUsadoG: entrada.pesoUsadoG },
+    ...itensFilamentoExtras,
+  ]);
   const custoEnergia = entrada.custoEnergiaHora * entrada.horasImpressao;
   const custoDepreciacao = entrada.taxaDepreciacaoHora * entrada.horasImpressao;
   const subtotal = custoFilamento + custoEnergia + custoDepreciacao;

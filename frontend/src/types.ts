@@ -120,6 +120,19 @@ export interface NovoExtra {
   valorCusto: number;
 }
 
+export interface OrcamentoFilamentoExtraItem {
+  id: string;
+  orcamentoId: string;
+  filamentoId: string;
+  pesoUsadoG: string;
+  filamento: Filamento;
+}
+
+export interface NovaCorAdicional {
+  filamentoId: string;
+  pesoUsadoG: number;
+}
+
 export interface Orcamento {
   id: string;
   clienteId: string;
@@ -137,6 +150,7 @@ export interface Orcamento {
   filamento: Filamento;
   maquina: Maquina | null;
   extras: OrcamentoExtraItem[];
+  coresExtras: OrcamentoFilamentoExtraItem[];
   historico?: OrcamentoHistoricoItem[];
 }
 
@@ -154,6 +168,7 @@ export interface NovoOrcamento {
   margemPercentual: number;
   extras?: NovoExtra[];
   margemExtras?: number;
+  coresAdicionais?: NovaCorAdicional[];
 }
 
 export interface OrcamentoComEstoque extends Orcamento {

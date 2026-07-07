@@ -132,6 +132,25 @@ pro WhatsApp.
   podem mudar enquanto o orçamento está pendente. O backend nunca gera sugestão de nome
   sozinho, só salva o que vier no campo; a sugestão (tipo + cor do filamento) é
   responsabilidade do frontend antes de enviar
+- Orçamento multi-cor: `Orcamento.filamentoId`/`pesoUsadoG` continuam sendo a cor
+  principal, sem mudar. Cada cor adicional é uma linha em `OrcamentoFilamentoExtra`
+  (orcamentoId, filamentoId, pesoUsadoG) — não existe campo "é multi-cor" separado, é só
+  inferido pela existência de linhas ali. `calcularCusto` (calculo.ts) ganhou um 5º
+  parâmetro opcional `itensFilamentoExtras`; sem ele o comportamento é idêntico ao de
+  antes (cor única), então nada que já existia mudou. Na criação (POST /orcamentos), o
+  custo de cada cor entra com a MESMA margemPercentual do resto (energia/depreciação),
+  porque a entrada bruta ainda está disponível naquele momento. Já em
+  POST /orcamentos/:id/cores e DELETE .../cores/:corId (adicionar/remover cor de um
+  orçamento JÁ criado), o custo da cor entra puro (peso × preço/g), sem markup nenhum —
+  decisão consciente do dono do projeto, porque `margemPercentual` nunca fica guardada
+  no Orçamento (só o `valorCalculado` final, mesma razão de energia/depreciação acima),
+  então não tem como recalcular o valor inteiro com precisão depois da criação. Isso é
+  diferente de `OrcamentoExtra`, que tem sua própria `margemExtras` guardada e por isso
+  consegue recalcular corretamente depois. Ao aceitar (PUT /orcamentos/:id/status), cada
+  filamento envolvido (principal + cada cor) gera seu próprio `MovimentoEstoque` de
+  saída e desconta seu próprio `pesoAtualG`; o aviso de estoque baixo considera todos
+  eles, não só o principal. `{material}` e `{peso}` na mensagem de WhatsApp somam/listam
+  todas as cores quando há mais de uma
 
 ## Já construído e testado
 
@@ -156,6 +175,11 @@ pro WhatsApp.
 10. Responsividade completa com breakpoint único em 768px: navegação em gaveta no
     mobile reaproveitando o mesmo componente do desktop, formulários/grids empilhados,
     tabela de filamentos em cartões e demais tabelas com scroll horizontal controlado
+11. Orçamento multi-cor: adicionar quantas cores forem necessárias (cada uma com seu
+    filamento e peso) na Calculadora antes de salvar, ou depois na aba Orçamentos
+    enquanto pendente; custo de filamento passa a ser a soma de todas as cores usadas,
+    aceite desconta o estoque de cada filamento envolvido, mensagem de WhatsApp lista
+    todos os materiais
 
 ## Pendente
 

@@ -70,6 +70,7 @@ model Filamento {
 
   orcamentos     Orcamento[]
   movimentos     MovimentoEstoque[]
+  coresExtras    OrcamentoFilamentoExtra[]
 
   @@map("filamentos")
 }
@@ -101,6 +102,7 @@ model Orcamento {
 
   historico      OrcamentoHistorico[]
   extras         OrcamentoExtra[]
+  coresExtras    OrcamentoFilamentoExtra[]
   venda          Venda?
 
   @@map("orcamentos")
@@ -114,6 +116,20 @@ model OrcamentoExtra {
   valorCusto  Decimal   @db.Decimal(10, 2)
 
   @@map("orcamento_extras")
+}
+
+// Cor/material adicional usado no mesmo orçamento, além do filamento principal
+// (Orcamento.filamentoId). A existência de pelo menos um registro aqui é o que
+// define um orçamento como multi-cor — não há campo separado pra isso.
+model OrcamentoFilamentoExtra {
+  id          String    @id @default(uuid())
+  orcamentoId String
+  orcamento   Orcamento @relation(fields: [orcamentoId], references: [id])
+  filamentoId String
+  filamento   Filamento @relation(fields: [filamentoId], references: [id])
+  pesoUsadoG  Decimal   @db.Decimal(10, 2)
+
+  @@map("orcamento_filamento_extras")
 }
 
 model OrcamentoHistorico {

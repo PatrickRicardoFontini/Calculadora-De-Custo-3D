@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { calcularOrcamento, criarOrcamento, listarClientes, listarFilamentos, listarMaquinas } from "../api/client";
-import type { CalculoResultado, Cliente, Filamento, Maquina, NovoExtra, Usuario } from "../types";
+import type { CalculoResultado, Cliente, Filamento, Maquina, NovaCorAdicional, NovoExtra, Usuario } from "../types";
 
 interface CalculadoraProps {
   usuario: Usuario;
@@ -39,6 +39,8 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
   const [novoExtraDescricao, setNovoExtraDescricao] = useState("");
   const [novoExtraValor, setNovoExtraValor] = useState("");
   const [margemExtrasInput, setMargemExtrasInput] = useState(usuario.margemExtrasPadrao ?? "");
+
+  const [coresAdicionais, setCoresAdicionais] = useState<{ filamentoId: string; pesoUsadoG: string }[]>([]);
 
   useEffect(() => {
     listarFilamentos()
@@ -99,6 +101,18 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
     setExtras((atual) => atual.filter((_, i) => i !== indice));
   }
 
+  function adicionarLinhaCor() {
+    setCoresAdicionais((atual) => [...atual, { filamentoId: filamentos[0]?.id ?? "", pesoUsadoG: "" }]);
+  }
+
+  function atualizarCorAdicional(indice: number, campo: "filamentoId" | "pesoUsadoG", valor: string) {
+    setCoresAdicionais((atual) => atual.map((item, i) => (i === indice ? { ...item, [campo]: valor } : item)));
+  }
+
+  function removerCorAdicionalLocal(indice: number) {
+    setCoresAdicionais((atual) => atual.filter((_, i) => i !== indice));
+  }
+
   const custoTotalExtras = extras.reduce((soma, e) => soma + e.valorCusto, 0);
   const margemExtrasNum = Number(margemExtrasInput) || 0;
   const valorExtrasComMargem = custoTotalExtras * (1 + margemExtrasNum / 100);
@@ -131,6 +145,16 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
     e.preventDefault();
     if (!resultado) return;
 
+    const coresAdicionaisValidas: NovaCorAdicional[] = [];
+    for (const cor of coresAdicionais) {
+      const peso = Number(cor.pesoUsadoG);
+      if (!cor.filamentoId || Number.isNaN(peso) || peso <= 0) {
+        setErroSalvar("Preencha filamento e peso de todas as cores adicionadas");
+        return;
+      }
+      coresAdicionaisValidas.push({ filamentoId: cor.filamentoId, pesoUsadoG: peso });
+    }
+
     setSalvando(true);
     setErroSalvar(null);
     try {
@@ -146,12 +170,14 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
         margemPercentual: Number(form.margemPercentual),
         extras: extras.length > 0 ? extras : undefined,
         margemExtras: margemExtrasInput !== "" ? Number(margemExtrasInput) : undefined,
+        coresAdicionais: coresAdicionaisValidas.length > 0 ? coresAdicionaisValidas : undefined,
       });
       setOrcamentoSalvo(true);
       setNovoClienteNome("");
       setNovoClienteWhatsapp("");
       setNomeOrcamento("");
       setExtras([]);
+      setCoresAdicionais([]);
       aoSalvarOrcamento?.();
     } catch (err) {
       setErroSalvar((err as Error).message);
@@ -184,6 +210,37 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
                 </option>
               ))}
             </select>
+          </div>
+          <div className="campo campo-largura-total">
+            {coresAdicionais.map((cor, indice) => (
+              <div className="painel-inline" key={indice}>
+                <select
+                  value={cor.filamentoId}
+                  onChange={(e) => atualizarCorAdicional(indice, "filamentoId", e.target.value)}
+                >
+                  {filamentos.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.tipo} - {f.cor}
+                      {f.marca ? ` (${f.marca})` : ""}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="Peso usado (g)"
+                  value={cor.pesoUsadoG}
+                  onChange={(e) => atualizarCorAdicional(indice, "pesoUsadoG", e.target.value)}
+                />
+                <button type="button" className="botao-perigo" onClick={() => removerCorAdicionalLocal(indice)}>
+                  Remover
+                </button>
+              </div>
+            ))}
+            <button type="button" className="link-acao" onClick={adicionarLinhaCor}>
+              + Adicionar cor
+            </button>
           </div>
           <div className="campo">
             <label htmlFor="maquinaId">Máquina (opcional)</label>

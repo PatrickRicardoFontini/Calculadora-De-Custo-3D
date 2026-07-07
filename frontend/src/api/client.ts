@@ -233,6 +233,23 @@ export async function removerExtra(orcamentoId: string, extraId: string): Promis
   return tratarResposta(resposta);
 }
 
+export async function adicionarCor(orcamentoId: string, filamentoId: string, pesoUsadoG: number): Promise<Orcamento> {
+  const resposta = await fetch(`${API_URL}/orcamentos/${orcamentoId}/cores`, {
+    method: "POST",
+    headers: headersComAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ filamentoId, pesoUsadoG }),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function removerCor(orcamentoId: string, corId: string): Promise<Orcamento> {
+  const resposta = await fetch(`${API_URL}/orcamentos/${orcamentoId}/cores/${corId}`, {
+    method: "DELETE",
+    headers: headersComAuth(),
+  });
+  return tratarResposta(resposta);
+}
+
 export async function buscarMensagemWhatsapp(orcamentoId: string): Promise<{ mensagem: string }> {
   const resposta = await fetch(`${API_URL}/orcamentos/${orcamentoId}/mensagem-whatsapp`, {
     headers: headersComAuth(),

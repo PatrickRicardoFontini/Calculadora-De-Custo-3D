@@ -51,18 +51,26 @@ interface OrcamentoParaMensagem {
   horasImpressao: Prisma.Decimal | number | string;
   valorAtual: Prisma.Decimal | number | string;
   extras: { descricao: string }[];
+  coresExtras: { pesoUsadoG: Prisma.Decimal | number | string; filamento: { tipo: string; cor: string } }[];
 }
 
 export function dadosDoOrcamento(orcamento: OrcamentoParaMensagem): DadosMensagemWhatsapp {
-  const peso = decimalToNumber(orcamento.pesoUsadoG).toFixed(0);
+  const pesoTotal =
+    decimalToNumber(orcamento.pesoUsadoG) +
+    orcamento.coresExtras.reduce((soma, cor) => soma + decimalToNumber(cor.pesoUsadoG), 0);
   const horas = decimalToNumber(orcamento.horasImpressao).toFixed(1);
   const valor = decimalToNumber(orcamento.valorAtual).toFixed(2);
+
+  const materiais = [
+    `${orcamento.filamento.tipo} ${orcamento.filamento.cor}`,
+    ...orcamento.coresExtras.map((cor) => `${cor.filamento.tipo} ${cor.filamento.cor}`),
+  ];
 
   return {
     nome: orcamento.nome ?? "",
     cliente: orcamento.cliente.nome,
-    material: `${orcamento.filamento.tipo} ${orcamento.filamento.cor}`,
-    peso: `${peso}g`,
+    material: materiais.join(", "),
+    peso: `${pesoTotal.toFixed(0)}g`,
     horas: `${horas}h`,
     valor: `R$ ${valor}`,
     extras: orcamento.extras.length > 0 ? `Inclui: ${orcamento.extras.map((e) => e.descricao).join(", ")}` : "",
