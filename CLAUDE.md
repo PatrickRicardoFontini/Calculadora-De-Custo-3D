@@ -158,6 +158,29 @@ pro WhatsApp.
   cor) gera seu próprio `MovimentoEstoque` de saída e desconta seu próprio `pesoAtualG`;
   o aviso de estoque baixo considera todos eles, não só o principal. `{material}` e
   `{peso}` na mensagem de WhatsApp somam/listam todas as cores quando há mais de uma
+- Todo handler de rota assíncrono é envolvido por `asyncHandler` (`lib/asyncHandler.ts`),
+  que encaminha qualquer erro pra `next(err)`. Existe um middleware de erro central em
+  `server.ts` (precisa ser o último registrado) que loga o erro completo no servidor mas
+  só responde um erro genérico ("Requisição inválida" pra 4xx, "Erro interno do
+  servidor" pra 5xx) — nunca stack trace, mensagem crua do Prisma ou caminho de arquivo
+  na resposta HTTP. Sem isso, Express 4 deixa uma rejeição de promise não tratada
+  derrubar o processo inteiro (não só a requisição que falhou), o que afetaria todos os
+  usuários, não só quem disparou o erro
+- CORS lê `ALLOWED_ORIGIN` do `.env` (default `http://localhost:5173`), em vez de aberto
+  pra qualquer origem. Ajustar essa variável no ambiente de produção quando o frontend
+  for hospedado em domínio próprio
+- Login e registro compartilham um único limite de 10 tentativas por 15 minutos por IP
+  (`express-rate-limit`, mesma instância aplicada às duas rotas — não são dois
+  orçamentos de 10+10 separados), pra dificultar força bruta de senha
+- `Usuario.senhaHash` nunca é buscado do banco fora do login: rotas que retornam dados
+  de usuário (`registro`, `GET /me`, `PUT /configuracoes`) usam o `select` compartilhado
+  `USUARIO_SELECT_SEGURO` (`lib/usuarioSelect.ts`), que exclui o campo estruturalmente
+  em vez de depender de lembrar de tirá-lo manualmente da resposta
+- `POST /auth/registro` não tem nenhum caminho de "assumir" uma conta existente (havia
+  uma lógica antiga ligada à conta placeholder do seed que permitia registrar por cima
+  de um hash de senha inválido) — email já cadastrado sempre retorna 409, sem exceção. A
+  conta placeholder do seed (`default@calculadora.local`) serve só pra inspecionar dados
+  direto no banco, não loga nem aceita registro por cima dela
 
 ## Já construído e testado
 
@@ -187,13 +210,19 @@ pro WhatsApp.
     na criação, não editáveis depois; custo de filamento passa a ser a soma de todas as
     cores usadas (já refletido na prévia de cálculo, não só ao salvar), aceite desconta
     o estoque de cada filamento envolvido, mensagem de WhatsApp lista todos os materiais
+12. Auditoria de segurança completa antes de abrir pra outros makers: verificação de
+    posse em toda rota por id (nenhuma violação encontrada; um caminho legado de
+    "assumir conta" no registro foi removido — ver Decisões arquiteturais), tratamento
+    de erro (`asyncHandler` + middleware central em todas as rotas, item que estava
+    pendente desde a sessão de autenticação), segredos (`.env` sempre ignorado pelo git,
+    nunca commitado, `JWT_SECRET` já era forte), CORS configurável, rate limiting em
+    login/registro, `senhaHash` nunca exposto (`USUARIO_SELECT_SEGURO`), confirmação de
+    que não existe SQL cru em lugar nenhum (só Prisma), e validação de entrada (sem
+    número negativo em campo de preço/peso/margem, limites de tamanho de texto)
 
 ## Pendente
 
-- Auditoria de tratamento de erro nas rotas que ainda seguem o padrão antigo (clientes,
-  orçamentos, receita), garantindo que nenhuma derruba o servidor num erro de banco não
-  tratado
-- Ainda sem verificação de email, recuperação de senha, rate limiting de login
+- Ainda sem verificação de email, recuperação de senha
 - Ainda sem validação com outros makers reais (decisão consciente do dono do projeto até
   agora, priorizando funcionalidade)
 - Ainda sem deploy

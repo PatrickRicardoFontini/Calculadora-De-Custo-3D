@@ -16,7 +16,10 @@ async function main() {
   console.log("Usuário padrão pronto:");
   console.log(`  id: ${usuario.id}`);
   console.log(`  email: ${usuario.email}`);
-  console.log("\nRegistre-se no app com esse mesmo email para assumir essa conta e ver os dados de teste já existentes.");
+  console.log(
+    "\nEsse usuário não tem senha utilizável (não é possível logar nem se registrar com este email — " +
+      "POST /auth/registro sempre rejeita email já cadastrado). Sirva só para inspecionar dados de teste direto no banco."
+  );
 }
 
 main()

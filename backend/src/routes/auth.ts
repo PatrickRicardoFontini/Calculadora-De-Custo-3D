@@ -1,21 +1,38 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
-import type { Usuario } from "@prisma/client";
+import rateLimit from "express-rate-limit";
 import { prisma } from "../lib/prisma";
 import { gerarToken } from "../lib/jwt";
 import { autenticacao } from "../middleware/autenticacao";
+import { asyncHandler } from "../lib/asyncHandler";
+import { USUARIO_SELECT_SEGURO, type UsuarioSeguro } from "../lib/usuarioSelect";
 import { MODELO_PADRAO_WHATSAPP, dadosDeExemplo, renderizarMensagemWhatsapp } from "../lib/mensagemWhatsapp";
 
 export const authRouter = Router();
 
 const SENHA_MIN_LENGTH = 8;
+const SENHA_MAX_LENGTH = 128; // bcrypt ignora silenciosamente qualquer byte além do 72º
+const NOME_MAX_LENGTH = 150;
+const EMAIL_MAX_LENGTH = 255;
+const TEMPLATE_WHATSAPP_MAX_LENGTH = 5000;
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Limite de tentativas por IP em login/registro, pra dificultar força bruta de senha
+const limiteLoginRegistro = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { erro: "Muitas tentativas. Aguarde alguns minutos antes de tentar de novo." },
+});
+
+// Guarda defensiva: rejeita login com um erro genérico em vez de deixar bcrypt.compare
+// processar um hash malformado (por exemplo, a conta placeholder do prisma/seed.ts)
 function pareceHashBcrypt(hash: string): boolean {
   return hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$");
 }
 
-function usuarioParaResposta(usuario: Usuario) {
+function usuarioParaResposta(usuario: UsuarioSeguro) {
   return {
     id: usuario.id,
     nome: usuario.nome,
@@ -28,45 +45,44 @@ function usuarioParaResposta(usuario: Usuario) {
   };
 }
 
-// POST /auth/registro - cria uma conta nova, ou assume a conta do seed se ela ainda não tiver senha real
-authRouter.post("/registro", async (req, res) => {
+// POST /auth/registro - cria uma conta nova
+authRouter.post("/registro", limiteLoginRegistro, asyncHandler(async (req, res) => {
   const { nome, email, senha } = req.body;
 
   const erros: string[] = [];
   if (!nome) erros.push("Campo obrigatório ausente: nome");
+  else if (String(nome).length > NOME_MAX_LENGTH) erros.push(`Campo 'nome' excede o tamanho máximo de ${NOME_MAX_LENGTH} caracteres`);
   if (!email || !REGEX_EMAIL.test(email)) erros.push("Email inválido");
+  else if (String(email).length > EMAIL_MAX_LENGTH) erros.push(`Campo 'email' excede o tamanho máximo de ${EMAIL_MAX_LENGTH} caracteres`);
   if (!senha || String(senha).length < SENHA_MIN_LENGTH) {
     erros.push(`Senha deve ter pelo menos ${SENHA_MIN_LENGTH} caracteres`);
+  } else if (String(senha).length > SENHA_MAX_LENGTH) {
+    erros.push(`Senha deve ter no máximo ${SENHA_MAX_LENGTH} caracteres`);
   }
   if (erros.length > 0) {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
   }
 
-  const senhaHash = await bcrypt.hash(senha, 10);
   const existente = await prisma.usuario.findUnique({ where: { email } });
-
-  let usuario;
-  if (!existente) {
-    usuario = await prisma.usuario.create({ data: { nome, email, senhaHash } });
-  } else if (!pareceHashBcrypt(existente.senhaHash)) {
-    // conta criada pelo seed, ainda sem senha real: assume essa conta e preserva os dados vinculados
-    usuario = await prisma.usuario.update({
-      where: { id: existente.id },
-      data: { nome, senhaHash },
-    });
-  } else {
+  if (existente) {
     return res.status(409).json({ erro: "Email já cadastrado" });
   }
 
+  const senhaHash = await bcrypt.hash(senha, 10);
+  const usuario = await prisma.usuario.create({
+    data: { nome, email, senhaHash },
+    select: USUARIO_SELECT_SEGURO,
+  });
+
   const token = gerarToken(usuario.id);
   res.status(201).json({ token, usuario: usuarioParaResposta(usuario) });
-});
+}));
 
 // POST /auth/login
-authRouter.post("/login", async (req, res) => {
+authRouter.post("/login", limiteLoginRegistro, asyncHandler(async (req, res) => {
   const { email, senha } = req.body;
 
-  if (!email || !senha) {
+  if (!email || !senha || String(email).length > EMAIL_MAX_LENGTH || String(senha).length > SENHA_MAX_LENGTH) {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: ["Informe email e senha"] });
   }
 
@@ -84,38 +100,48 @@ authRouter.post("/login", async (req, res) => {
 
   const token = gerarToken(usuario.id);
   res.json({ token, usuario: usuarioParaResposta(usuario) });
-});
+}));
 
 // GET /auth/me - dados do usuário autenticado, usado pelo frontend pra validar o token guardado
-authRouter.get("/me", autenticacao, async (req, res) => {
-  const usuario = await prisma.usuario.findUnique({ where: { id: req.usuarioId } });
+authRouter.get("/me", autenticacao, asyncHandler(async (req, res) => {
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: req.usuarioId },
+    select: USUARIO_SELECT_SEGURO,
+  });
   if (!usuario) {
     return res.status(401).json({ erro: "Não autenticado" });
   }
   res.json(usuarioParaResposta(usuario));
-});
+}));
 
 // PUT /auth/configuracoes - atualiza preço do kWh, margens padrão e template de WhatsApp da conta
-authRouter.put("/configuracoes", autenticacao, async (req, res) => {
+authRouter.put("/configuracoes", autenticacao, asyncHandler(async (req, res) => {
   const { precoKwh, margemPadrao, margemExtrasPadrao, templateWhatsapp } = req.body;
 
   const erros: string[] = [];
-  if (precoKwh !== undefined && precoKwh !== null && precoKwh !== "" && Number.isNaN(Number(precoKwh))) {
+  if (precoKwh !== undefined && precoKwh !== null && precoKwh !== "" && (Number.isNaN(Number(precoKwh)) || Number(precoKwh) < 0)) {
     erros.push("Campo numérico inválido: precoKwh");
   }
-  if (margemPadrao !== undefined && margemPadrao !== null && margemPadrao !== "" && Number.isNaN(Number(margemPadrao))) {
+  if (
+    margemPadrao !== undefined &&
+    margemPadrao !== null &&
+    margemPadrao !== "" &&
+    (Number.isNaN(Number(margemPadrao)) || Number(margemPadrao) < 0)
+  ) {
     erros.push("Campo numérico inválido: margemPadrao");
   }
   if (
     margemExtrasPadrao !== undefined &&
     margemExtrasPadrao !== null &&
     margemExtrasPadrao !== "" &&
-    Number.isNaN(Number(margemExtrasPadrao))
+    (Number.isNaN(Number(margemExtrasPadrao)) || Number(margemExtrasPadrao) < 0)
   ) {
     erros.push("Campo numérico inválido: margemExtrasPadrao");
   }
   if (templateWhatsapp !== undefined && templateWhatsapp !== null && typeof templateWhatsapp !== "string") {
     erros.push("Campo inválido: templateWhatsapp");
+  } else if (typeof templateWhatsapp === "string" && templateWhatsapp.length > TEMPLATE_WHATSAPP_MAX_LENGTH) {
+    erros.push(`Campo 'templateWhatsapp' excede o tamanho máximo de ${TEMPLATE_WHATSAPP_MAX_LENGTH} caracteres`);
   }
   if (erros.length > 0) {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
@@ -137,19 +163,23 @@ authRouter.put("/configuracoes", autenticacao, async (req, res) => {
         templateWhatsapp: templateWhatsapp === "" || templateWhatsapp === null ? null : templateWhatsapp,
       }),
     },
+    select: USUARIO_SELECT_SEGURO,
   });
 
   res.json(usuarioParaResposta(usuario));
-});
+}));
 
 // POST /auth/preview-whatsapp - renderiza um template (ainda não salvo) com dados de exemplo
-authRouter.post("/preview-whatsapp", autenticacao, async (req, res) => {
+authRouter.post("/preview-whatsapp", autenticacao, asyncHandler(async (req, res) => {
   const { template } = req.body;
 
   if (template !== undefined && typeof template !== "string") {
     return res.status(400).json({ erro: "Campo 'template' inválido" });
   }
+  if (typeof template === "string" && template.length > TEMPLATE_WHATSAPP_MAX_LENGTH) {
+    return res.status(400).json({ erro: `Campo 'template' excede o tamanho máximo de ${TEMPLATE_WHATSAPP_MAX_LENGTH} caracteres` });
+  }
 
   const mensagem = renderizarMensagemWhatsapp(template ?? MODELO_PADRAO_WHATSAPP, dadosDeExemplo());
   res.json({ mensagem });
-});
+}));

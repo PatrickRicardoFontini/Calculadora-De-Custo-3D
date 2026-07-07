@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { decimalToNumber } from "../lib/decimal";
 import { arredondar } from "../lib/calculo";
+import { asyncHandler } from "../lib/asyncHandler";
 
 export const receitaRouter = Router();
 
@@ -10,7 +11,9 @@ function chaveMes(data: Date): string {
 }
 
 // GET /receita/mensal - agrega as vendas dos últimos 12 meses por mês
-receitaRouter.get("/mensal", async (req, res) => {
+receitaRouter.get(
+  "/mensal",
+  asyncHandler(async (req, res) => {
   const desde = new Date();
   desde.setUTCMonth(desde.getUTCMonth() - 11);
   desde.setUTCDate(1);
@@ -40,10 +43,13 @@ receitaRouter.get("/mensal", async (req, res) => {
     .sort((a, b) => (a.mes < b.mes ? 1 : -1));
 
   res.json(resultado);
-});
+  })
+);
 
 // GET /receita/vendas?mes=2026-07 - lista as vendas de um mês específico com dados do pedido
-receitaRouter.get("/vendas", async (req, res) => {
+receitaRouter.get(
+  "/vendas",
+  asyncHandler(async (req, res) => {
   const { mes } = req.query;
 
   if (typeof mes !== "string" || !/^\d{4}-\d{2}$/.test(mes)) {
@@ -85,4 +91,5 @@ receitaRouter.get("/vendas", async (req, res) => {
   }));
 
   res.json(resultado);
-});
+  })
+);

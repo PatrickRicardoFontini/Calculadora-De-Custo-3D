@@ -2,12 +2,15 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { calcularCusto, validarEntradaCalculo } from "../lib/calculo";
 import { buscarItensFilamentoExtras, validarCoresAdicionais } from "../lib/coresAdicionais";
+import { asyncHandler } from "../lib/asyncHandler";
 
 export const calculadoraRouter = Router();
 
 // POST /calculadora - calcula o custo de um orçamento a partir de um filamento cadastrado, somando
 // eventuais cores adicionais (mesma validação e função de cálculo usadas por POST /orcamentos)
-calculadoraRouter.post("/", async (req, res) => {
+calculadoraRouter.post(
+  "/",
+  asyncHandler(async (req, res) => {
   const { filamentoId, pesoUsadoG, horasImpressao, custoEnergiaHora, taxaDepreciacaoHora, margemPercentual, coresAdicionais } =
     req.body;
 
@@ -59,4 +62,5 @@ calculadoraRouter.post("/", async (req, res) => {
     entrada,
     detalhamento,
   });
-});
+  })
+);

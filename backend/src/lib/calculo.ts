@@ -113,7 +113,7 @@ export function validarEntradaCalculo(body: Record<string, unknown>): string[] {
     const valor = body[campo];
     if (valor === undefined || valor === null || valor === "") {
       erros.push(`Campo obrigatório ausente: ${campo}`);
-    } else if (Number.isNaN(Number(valor))) {
+    } else if (Number.isNaN(Number(valor)) || Number(valor) < 0) {
       erros.push(`Campo numérico inválido: ${campo}`);
     }
   }
