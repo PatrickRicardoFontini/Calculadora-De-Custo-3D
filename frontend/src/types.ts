@@ -42,6 +42,7 @@ export interface CalculoInput {
   custoEnergiaHora: number;
   taxaDepreciacaoHora: number;
   margemPercentual: number;
+  coresAdicionais?: NovaCorAdicional[];
 }
 
 export interface Maquina {

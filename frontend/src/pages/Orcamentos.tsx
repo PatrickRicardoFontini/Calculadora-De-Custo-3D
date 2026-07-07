@@ -1,18 +1,15 @@
 import { useEffect, useState } from "react";
 import {
-  adicionarCor,
   adicionarExtra,
   atualizarNomeOrcamento,
   atualizarStatusOrcamento,
   atualizarValorOrcamento,
   buscarMensagemWhatsapp,
   buscarOrcamento,
-  listarFilamentos,
   listarOrcamentos,
-  removerCor,
   removerExtra,
 } from "../api/client";
-import type { Filamento, Orcamento, StatusOrcamento } from "../types";
+import type { Orcamento, StatusOrcamento } from "../types";
 import { formatarTelefoneWhatsapp, montarLinkWhatsapp } from "../lib/whatsapp";
 
 type Filtro = "TODOS" | StatusOrcamento;
@@ -45,18 +42,8 @@ export function Orcamentos() {
   const [novaExtraDescricao, setNovaExtraDescricao] = useState("");
   const [novaExtraValor, setNovaExtraValor] = useState("");
 
-  const [filamentos, setFilamentos] = useState<Filamento[]>([]);
-  const [novaCorFilamentoId, setNovaCorFilamentoId] = useState("");
-  const [novaCorPeso, setNovaCorPeso] = useState("");
-
   const [editandoNomeId, setEditandoNomeId] = useState<string | null>(null);
   const [nomeEditado, setNomeEditado] = useState("");
-
-  useEffect(() => {
-    listarFilamentos()
-      .then(setFilamentos)
-      .catch(() => {});
-  }, []);
 
   async function carregar() {
     setCarregando(true);
@@ -144,8 +131,6 @@ export function Orcamentos() {
     setExpandidoId(orcamento.id);
     setNovaExtraDescricao("");
     setNovaExtraValor("");
-    setNovaCorFilamentoId(filamentos[0]?.id ?? "");
-    setNovaCorPeso("");
     if (!orcamento.historico) {
       try {
         const completo = await buscarOrcamento(orcamento.id);
@@ -181,38 +166,6 @@ export function Orcamentos() {
     setErro(null);
     try {
       const atualizado = await removerExtra(orcamentoId, extraId);
-      setOrcamentos((atual) => atual.map((o) => (o.id === atualizado.id ? atualizado : o)));
-    } catch (err) {
-      setErro((err as Error).message);
-    } finally {
-      setProcessandoId(null);
-    }
-  }
-
-  async function adicionarCorOrcamento(orcamentoId: string) {
-    const peso = Number(novaCorPeso);
-    if (!novaCorFilamentoId || Number.isNaN(peso) || peso <= 0) {
-      setErro("Selecione o filamento e informe um peso válido para a cor");
-      return;
-    }
-    setProcessandoId(orcamentoId);
-    setErro(null);
-    try {
-      const atualizado = await adicionarCor(orcamentoId, novaCorFilamentoId, peso);
-      setOrcamentos((atual) => atual.map((o) => (o.id === atualizado.id ? atualizado : o)));
-      setNovaCorPeso("");
-    } catch (err) {
-      setErro((err as Error).message);
-    } finally {
-      setProcessandoId(null);
-    }
-  }
-
-  async function removerCorOrcamento(orcamentoId: string, corId: string) {
-    setProcessandoId(orcamentoId);
-    setErro(null);
-    try {
-      const atualizado = await removerCor(orcamentoId, corId);
       setOrcamentos((atual) => atual.map((o) => (o.id === atualizado.id ? atualizado : o)));
     } catch (err) {
       setErro((err as Error).message);
@@ -374,61 +327,6 @@ export function Orcamentos() {
                     <p className="aviso-estoque-baixo">
                       Aceito, mas o estoque de {orcamento.filamento.tipo} {orcamento.filamento.cor} está baixo agora.
                     </p>
-                  )}
-
-                  {expandidoId === orcamento.id && (
-                    <div className="secao-extras">
-                      <h4>Cores adicionais</h4>
-                      {orcamento.coresExtras.length > 0 ? (
-                        <ul className="lista-extras">
-                          {orcamento.coresExtras.map((cor) => (
-                            <li key={cor.id}>
-                              {cor.filamento.tipo} {cor.filamento.cor}
-                              {cor.filamento.marca ? ` (${cor.filamento.marca})` : ""} —{" "}
-                              <span className="numero">{parseFloat(cor.pesoUsadoG).toFixed(0)}g</span>
-                              {orcamento.status === "PENDENTE" && (
-                                <button
-                                  className="botao-perigo"
-                                  disabled={processando}
-                                  onClick={() => removerCorOrcamento(orcamento.id, cor.id)}
-                                >
-                                  Remover
-                                </button>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="detalhe-secundario">Nenhuma cor adicional, só o filamento principal.</p>
-                      )}
-                      {orcamento.status === "PENDENTE" && (
-                        <div className="painel-inline">
-                          <select value={novaCorFilamentoId} onChange={(e) => setNovaCorFilamentoId(e.target.value)}>
-                            {filamentos.map((f) => (
-                              <option key={f.id} value={f.id}>
-                                {f.tipo} - {f.cor}
-                                {f.marca ? ` (${f.marca})` : ""}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            placeholder="Peso usado (g)"
-                            value={novaCorPeso}
-                            onChange={(e) => setNovaCorPeso(e.target.value)}
-                          />
-                          <button
-                            className="botao-secundario"
-                            disabled={processando}
-                            onClick={() => adicionarCorOrcamento(orcamento.id)}
-                          >
-                            Adicionar
-                          </button>
-                        </div>
-                      )}
-                    </div>
                   )}
 
                   {expandidoId === orcamento.id && (

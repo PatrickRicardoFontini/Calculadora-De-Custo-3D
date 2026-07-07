@@ -117,8 +117,27 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
   const margemExtrasNum = Number(margemExtrasInput) || 0;
   const valorExtrasComMargem = custoTotalExtras * (1 + margemExtrasNum / 100);
 
+  function validarCoresAdicionaisLocais(): NovaCorAdicional[] | null {
+    const validas: NovaCorAdicional[] = [];
+    for (const cor of coresAdicionais) {
+      const peso = Number(cor.pesoUsadoG);
+      if (!cor.filamentoId || Number.isNaN(peso) || peso <= 0) {
+        return null;
+      }
+      validas.push({ filamentoId: cor.filamentoId, pesoUsadoG: peso });
+    }
+    return validas;
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+
+    const coresAdicionaisValidas = validarCoresAdicionaisLocais();
+    if (coresAdicionaisValidas === null) {
+      setErro("Preencha filamento e peso de todas as cores adicionadas");
+      return;
+    }
+
     setCalculando(true);
     setErro(null);
     setResultado(null);
@@ -131,6 +150,7 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
         custoEnergiaHora: Number(form.custoEnergiaHora),
         taxaDepreciacaoHora: Number(form.taxaDepreciacaoHora),
         margemPercentual: Number(form.margemPercentual),
+        coresAdicionais: coresAdicionaisValidas.length > 0 ? coresAdicionaisValidas : undefined,
       });
       setResultado(dados);
       setNomeOrcamento((atual) => atual || `${dados.filamento.tipo} ${dados.filamento.cor}`);
@@ -145,14 +165,10 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
     e.preventDefault();
     if (!resultado) return;
 
-    const coresAdicionaisValidas: NovaCorAdicional[] = [];
-    for (const cor of coresAdicionais) {
-      const peso = Number(cor.pesoUsadoG);
-      if (!cor.filamentoId || Number.isNaN(peso) || peso <= 0) {
-        setErroSalvar("Preencha filamento e peso de todas as cores adicionadas");
-        return;
-      }
-      coresAdicionaisValidas.push({ filamentoId: cor.filamentoId, pesoUsadoG: peso });
+    const coresAdicionaisValidas = validarCoresAdicionaisLocais();
+    if (coresAdicionaisValidas === null) {
+      setErroSalvar("Preencha filamento e peso de todas as cores adicionadas");
+      return;
     }
 
     setSalvando(true);
@@ -194,45 +210,65 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
         <p>Cadastre um filamento no estoque antes de calcular um orçamento.</p>
       ) : (
         <form className="formulario" onSubmit={handleSubmit}>
-          <div className="campo">
-            <label htmlFor="filamentoId">Filamento</label>
-            <select
-              id="filamentoId"
-              required
-              value={form.filamentoId}
-              onChange={(e) => atualizarCampo("filamentoId", e.target.value)}
-            >
-              {filamentos.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.tipo} - {f.cor}
-                  {f.marca ? ` (${f.marca})` : ""}
-                  {f.precoPorGrama ? ` — R$ ${parseFloat(f.precoPorGrama).toFixed(4)}/g` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="campo campo-largura-total">
-            {coresAdicionais.map((cor, indice) => (
-              <div className="painel-inline" key={indice}>
+          <div className="secao-form-materiais">
+            <h3 className="titulo-secao-form">Materiais</h3>
+            <div className="linha-material">
+              <div className="campo">
+                <label htmlFor="filamentoId">Filamento</label>
                 <select
-                  value={cor.filamentoId}
-                  onChange={(e) => atualizarCorAdicional(indice, "filamentoId", e.target.value)}
+                  id="filamentoId"
+                  required
+                  value={form.filamentoId}
+                  onChange={(e) => atualizarCampo("filamentoId", e.target.value)}
                 >
                   {filamentos.map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.tipo} - {f.cor}
                       {f.marca ? ` (${f.marca})` : ""}
+                      {f.precoPorGrama ? ` — R$ ${parseFloat(f.precoPorGrama).toFixed(4)}/g` : ""}
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="campo">
+                <label htmlFor="pesoUsadoG">Peso usado (g)</label>
                 <input
+                  id="pesoUsadoG"
+                  required
                   type="number"
                   min="0"
                   step="0.1"
-                  placeholder="Peso usado (g)"
-                  value={cor.pesoUsadoG}
-                  onChange={(e) => atualizarCorAdicional(indice, "pesoUsadoG", e.target.value)}
+                  value={form.pesoUsadoG}
+                  onChange={(e) => atualizarCampo("pesoUsadoG", e.target.value)}
                 />
+              </div>
+            </div>
+            {coresAdicionais.map((cor, indice) => (
+              <div className="linha-material" key={indice}>
+                <div className="campo">
+                  <select
+                    aria-label="Filamento da cor adicional"
+                    value={cor.filamentoId}
+                    onChange={(e) => atualizarCorAdicional(indice, "filamentoId", e.target.value)}
+                  >
+                    {filamentos.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.tipo} - {f.cor}
+                        {f.marca ? ` (${f.marca})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="campo">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="Peso usado (g)"
+                    value={cor.pesoUsadoG}
+                    onChange={(e) => atualizarCorAdicional(indice, "pesoUsadoG", e.target.value)}
+                  />
+                </div>
                 <button type="button" className="botao-perigo" onClick={() => removerCorAdicionalLocal(indice)}>
                   Remover
                 </button>
@@ -242,80 +278,75 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
               + Adicionar cor
             </button>
           </div>
-          <div className="campo">
-            <label htmlFor="maquinaId">Máquina (opcional)</label>
-            <select id="maquinaId" value={maquinaId} onChange={(e) => selecionarMaquina(e.target.value)}>
-              <option value="">Nenhuma (preencher manualmente)</option>
-              {maquinas.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.nome}
-                </option>
-              ))}
-            </select>
+
+          <div className="secao-form-custo">
+            <h3 className="titulo-secao-form">Custo e margem</h3>
+            <div className="grade-secao-form">
+              <div className="campo">
+                <label htmlFor="maquinaId">Máquina (opcional)</label>
+                <select id="maquinaId" value={maquinaId} onChange={(e) => selecionarMaquina(e.target.value)}>
+                  <option value="">Nenhuma (preencher manualmente)</option>
+                  {maquinas.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="campo">
+                <label htmlFor="horasImpressao">Horas de impressão</label>
+                <input
+                  id="horasImpressao"
+                  required
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={form.horasImpressao}
+                  onChange={(e) => atualizarCampo("horasImpressao", e.target.value)}
+                />
+              </div>
+              <div className="campo">
+                <label htmlFor="custoEnergiaHora">Custo de energia por hora (R$)</label>
+                <input
+                  id="custoEnergiaHora"
+                  required
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={form.custoEnergiaHora}
+                  onChange={(e) => atualizarCampo("custoEnergiaHora", e.target.value)}
+                />
+                {maquinaId && !usuario.precoKwh && (
+                  <span className="nota-campo">Configure o preço do kWh na aba Máquinas para preencher automaticamente.</span>
+                )}
+              </div>
+              <div className="campo">
+                <label htmlFor="taxaDepreciacaoHora">Depreciação por hora (R$)</label>
+                <input
+                  id="taxaDepreciacaoHora"
+                  required
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={form.taxaDepreciacaoHora}
+                  onChange={(e) => atualizarCampo("taxaDepreciacaoHora", e.target.value)}
+                />
+              </div>
+              <div className="campo">
+                <label htmlFor="margemPercentual">Margem de lucro (%)</label>
+                <input
+                  id="margemPercentual"
+                  required
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.margemPercentual}
+                  onChange={(e) => atualizarCampo("margemPercentual", e.target.value)}
+                />
+              </div>
+            </div>
           </div>
-          <div className="campo">
-            <label htmlFor="pesoUsadoG">Peso usado (g)</label>
-            <input
-              id="pesoUsadoG"
-              required
-              type="number"
-              min="0"
-              step="0.1"
-              value={form.pesoUsadoG}
-              onChange={(e) => atualizarCampo("pesoUsadoG", e.target.value)}
-            />
-          </div>
-          <div className="campo">
-            <label htmlFor="horasImpressao">Horas de impressão</label>
-            <input
-              id="horasImpressao"
-              required
-              type="number"
-              min="0"
-              step="0.1"
-              value={form.horasImpressao}
-              onChange={(e) => atualizarCampo("horasImpressao", e.target.value)}
-            />
-          </div>
-          <div className="campo">
-            <label htmlFor="custoEnergiaHora">Custo de energia por hora (R$)</label>
-            <input
-              id="custoEnergiaHora"
-              required
-              type="number"
-              min="0"
-              step="any"
-              value={form.custoEnergiaHora}
-              onChange={(e) => atualizarCampo("custoEnergiaHora", e.target.value)}
-            />
-            {maquinaId && !usuario.precoKwh && (
-              <span className="nota-campo">Configure o preço do kWh na aba Máquinas para preencher automaticamente.</span>
-            )}
-          </div>
-          <div className="campo">
-            <label htmlFor="taxaDepreciacaoHora">Depreciação por hora (R$)</label>
-            <input
-              id="taxaDepreciacaoHora"
-              required
-              type="number"
-              min="0"
-              step="any"
-              value={form.taxaDepreciacaoHora}
-              onChange={(e) => atualizarCampo("taxaDepreciacaoHora", e.target.value)}
-            />
-          </div>
-          <div className="campo">
-            <label htmlFor="margemPercentual">Margem de lucro (%)</label>
-            <input
-              id="margemPercentual"
-              required
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.margemPercentual}
-              onChange={(e) => atualizarCampo("margemPercentual", e.target.value)}
-            />
-          </div>
+
           <button type="submit" className="botao-primario" disabled={calculando}>
             {calculando ? "Calculando..." : "Calcular"}
           </button>

@@ -137,20 +137,27 @@ pro WhatsApp.
   (orcamentoId, filamentoId, pesoUsadoG) — não existe campo "é multi-cor" separado, é só
   inferido pela existência de linhas ali. `calcularCusto` (calculo.ts) ganhou um 5º
   parâmetro opcional `itensFilamentoExtras`; sem ele o comportamento é idêntico ao de
-  antes (cor única), então nada que já existia mudou. Na criação (POST /orcamentos), o
-  custo de cada cor entra com a MESMA margemPercentual do resto (energia/depreciação),
-  porque a entrada bruta ainda está disponível naquele momento. Já em
-  POST /orcamentos/:id/cores e DELETE .../cores/:corId (adicionar/remover cor de um
-  orçamento JÁ criado), o custo da cor entra puro (peso × preço/g), sem markup nenhum —
-  decisão consciente do dono do projeto, porque `margemPercentual` nunca fica guardada
-  no Orçamento (só o `valorCalculado` final, mesma razão de energia/depreciação acima),
-  então não tem como recalcular o valor inteiro com precisão depois da criação. Isso é
-  diferente de `OrcamentoExtra`, que tem sua própria `margemExtras` guardada e por isso
-  consegue recalcular corretamente depois. Ao aceitar (PUT /orcamentos/:id/status), cada
-  filamento envolvido (principal + cada cor) gera seu próprio `MovimentoEstoque` de
-  saída e desconta seu próprio `pesoAtualG`; o aviso de estoque baixo considera todos
-  eles, não só o principal. `{material}` e `{peso}` na mensagem de WhatsApp somam/listam
-  todas as cores quando há mais de uma
+  antes (cor única), então nada que já existia mudou. A validação e a busca dos
+  filamentos de `coresAdicionais` são compartilhadas (`lib/coresAdicionais.ts`) entre
+  `POST /calculadora` (prévia) e `POST /orcamentos` (criação), pra não duplicar a lógica
+  entre os dois
+- **Cores só são definidas na criação do orçamento, não são editáveis depois** (ao
+  contrário de custos extras, que continuam editáveis com o orçamento pendente). Motivo:
+  o custo de cada cor entra com a MESMA margemPercentual do resto (energia/depreciação),
+  e essa margem só está disponível na hora da criação (não fica guardada no Orçamento,
+  só o `valorCalculado` final — mesma razão de energia/depreciação não guardadas).
+  Sem a margem, não tem como recalcular o valor com precisão se uma cor for
+  adicionada/removida depois; uma tentativa anterior de contornar isso aplicando o custo
+  puro (sem markup) na edição pós-criação foi revertida por criar um furo real de
+  precificação. Diferente de `OrcamentoExtra`, que tem sua própria `margemExtras`
+  guardada e por isso consegue recalcular corretamente a qualquer momento — decidir quais
+  materiais compõem a peça é decisão de antes de imprimir, custo extra (acessório) é do
+  tipo que se negocia depois. Não existem endpoints de adicionar/remover cor após a
+  criação
+- Ao aceitar (PUT /orcamentos/:id/status), cada filamento envolvido (principal + cada
+  cor) gera seu próprio `MovimentoEstoque` de saída e desconta seu próprio `pesoAtualG`;
+  o aviso de estoque baixo considera todos eles, não só o principal. `{material}` e
+  `{peso}` na mensagem de WhatsApp somam/listam todas as cores quando há mais de uma
 
 ## Já construído e testado
 
@@ -176,10 +183,10 @@ pro WhatsApp.
     mobile reaproveitando o mesmo componente do desktop, formulários/grids empilhados,
     tabela de filamentos em cartões e demais tabelas com scroll horizontal controlado
 11. Orçamento multi-cor: adicionar quantas cores forem necessárias (cada uma com seu
-    filamento e peso) na Calculadora antes de salvar, ou depois na aba Orçamentos
-    enquanto pendente; custo de filamento passa a ser a soma de todas as cores usadas,
-    aceite desconta o estoque de cada filamento envolvido, mensagem de WhatsApp lista
-    todos os materiais
+    filamento e peso) na Calculadora antes de calcular/salvar — cores são definidas só
+    na criação, não editáveis depois; custo de filamento passa a ser a soma de todas as
+    cores usadas (já refletido na prévia de cálculo, não só ao salvar), aceite desconta
+    o estoque de cada filamento envolvido, mensagem de WhatsApp lista todos os materiais
 
 ## Pendente
 

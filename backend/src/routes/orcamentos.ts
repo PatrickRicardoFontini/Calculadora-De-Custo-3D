@@ -4,12 +4,11 @@ import {
   arredondar,
   calcularCusto,
   calcularCustoEnergiaHora,
-  calcularCustoFilamentoTotal,
   calcularTaxaDepreciacaoHora,
   calcularValorExtrasComMargem,
   somarCustoExtras,
-  type ItemFilamentoCalculo,
 } from "../lib/calculo";
+import { buscarItensFilamentoExtras, validarCoresAdicionais } from "../lib/coresAdicionais";
 import { decimalToNumber } from "../lib/decimal";
 import { MODELO_PADRAO_WHATSAPP, dadosDoOrcamento, renderizarMensagemWhatsapp } from "../lib/mensagemWhatsapp";
 import type { StatusOrcamento } from "@prisma/client";
@@ -145,29 +144,8 @@ orcamentosRouter.post("/", async (req, res) => {
     erros.push("Campo numérico inválido: margemExtras");
   }
 
-  const coresAdicionaisInput: { filamentoId: string; pesoUsadoG: number }[] = [];
-  if (coresAdicionais !== undefined && !Array.isArray(coresAdicionais)) {
-    erros.push("Campo 'coresAdicionais' deve ser uma lista");
-  } else if (Array.isArray(coresAdicionais)) {
-    coresAdicionais.forEach((item, indice) => {
-      const filamentoIdItem = item?.filamentoId;
-      const pesoUsadoGItem = item?.pesoUsadoG;
-      if (typeof filamentoIdItem !== "string" || !filamentoIdItem.trim()) {
-        erros.push(`coresAdicionais[${indice}].filamentoId é obrigatório`);
-      }
-      if (
-        pesoUsadoGItem === undefined ||
-        pesoUsadoGItem === null ||
-        pesoUsadoGItem === "" ||
-        Number.isNaN(Number(pesoUsadoGItem)) ||
-        Number(pesoUsadoGItem) <= 0
-      ) {
-        erros.push(`coresAdicionais[${indice}].pesoUsadoG inválido`);
-      } else if (typeof filamentoIdItem === "string" && filamentoIdItem.trim()) {
-        coresAdicionaisInput.push({ filamentoId: filamentoIdItem, pesoUsadoG: Number(pesoUsadoGItem) });
-      }
-    });
-  }
+  const { erros: errosCores, validas: coresAdicionaisInput } = validarCoresAdicionais(coresAdicionais);
+  erros.push(...errosCores);
 
   if (erros.length > 0) {
     return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
@@ -183,21 +161,11 @@ orcamentosRouter.post("/", async (req, res) => {
     return res.status(400).json({ erro: "Filamento sem preço por grama definido. Reabasteça ou recadastre o filamento." });
   }
 
-  const itensFilamentoExtras: ItemFilamentoCalculo[] = [];
-  for (const item of coresAdicionaisInput) {
-    const filamentoCor = await prisma.filamento.findFirst({
-      where: { id: item.filamentoId, usuarioId: req.usuarioId },
-    });
-    if (!filamentoCor) {
-      return res.status(404).json({ erro: `Filamento não encontrado para uma das cores adicionais` });
-    }
-    if (filamentoCor.precoPorGrama === null) {
-      return res.status(400).json({
-        erro: `Filamento ${filamentoCor.tipo} ${filamentoCor.cor} sem preço por grama definido. Reabasteça ou recadastre o filamento.`,
-      });
-    }
-    itensFilamentoExtras.push({ filamento: filamentoCor, pesoUsadoG: item.pesoUsadoG });
+  const resultadoCores = await buscarItensFilamentoExtras(prisma, req.usuarioId, coresAdicionaisInput);
+  if (!resultadoCores.ok) {
+    return res.status(resultadoCores.status).json({ erro: resultadoCores.erro });
   }
+  const itensFilamentoExtras = resultadoCores.itens;
 
   if (clienteId) {
     const cliente = await prisma.cliente.findFirst({
@@ -436,122 +404,6 @@ orcamentosRouter.delete("/:id/extras/:extraId", async (req, res) => {
 
   const orcamentoAtualizado = await prisma.$transaction(async (tx) => {
     await tx.orcamentoExtra.delete({ where: { id: extra.id } });
-
-    const atualizado = await tx.orcamento.update({
-      where: { id: orcamento.id },
-      data: { valorCalculado: novoValor, valorAtual: novoValor },
-    });
-
-    await tx.orcamentoHistorico.create({
-      data: { orcamentoId: orcamento.id, valor: novoValor },
-    });
-
-    return atualizado;
-  });
-
-  const orcamentoCompleto = await prisma.orcamento.findFirst({
-    where: { id: orcamentoAtualizado.id },
-    include: INCLUDE_DETALHE,
-  });
-
-  res.json(orcamentoCompleto);
-});
-
-// POST /orcamentos/:id/cores - adiciona uma cor/material extra a um orçamento pendente e recalcula o valor.
-// O custo da cor entra puro (peso × preço/g), sem reaplicar a margem principal: essa margem não fica
-// guardada no orçamento (só o valorCalculado final), então não tem como recalcular o valor inteiro com
-// precisão aqui — diferente dos custos extras, que têm sua própria margemExtras guardada.
-orcamentosRouter.post("/:id/cores", async (req, res) => {
-  const { filamentoId, pesoUsadoG } = req.body;
-
-  if (typeof filamentoId !== "string" || !filamentoId.trim()) {
-    return res.status(400).json({ erro: "Campo obrigatório ausente: filamentoId" });
-  }
-  if (
-    pesoUsadoG === undefined ||
-    pesoUsadoG === null ||
-    pesoUsadoG === "" ||
-    Number.isNaN(Number(pesoUsadoG)) ||
-    Number(pesoUsadoG) <= 0
-  ) {
-    return res.status(400).json({ erro: "Campo 'pesoUsadoG' inválido" });
-  }
-
-  const orcamento = await prisma.orcamento.findFirst({
-    where: { id: req.params.id, usuarioId: req.usuarioId },
-  });
-  if (!orcamento) {
-    return res.status(404).json({ erro: "Orçamento não encontrado" });
-  }
-  if (orcamento.status !== "PENDENTE") {
-    return res.status(400).json({ erro: "Só é possível adicionar cores a orçamentos pendentes" });
-  }
-
-  const filamento = await prisma.filamento.findFirst({
-    where: { id: filamentoId, usuarioId: req.usuarioId },
-  });
-  if (!filamento) {
-    return res.status(404).json({ erro: "Filamento não encontrado" });
-  }
-  if (filamento.precoPorGrama === null) {
-    return res.status(400).json({ erro: "Filamento sem preço por grama definido. Reabasteça ou recadastre o filamento." });
-  }
-
-  const custoCor = decimalToNumber(filamento.precoPorGrama) * Number(pesoUsadoG);
-  const novoValor = arredondar(decimalToNumber(orcamento.valorCalculado) + custoCor);
-
-  const orcamentoAtualizado = await prisma.$transaction(async (tx) => {
-    await tx.orcamentoFilamentoExtra.create({
-      data: { orcamentoId: orcamento.id, filamentoId: filamento.id, pesoUsadoG: Number(pesoUsadoG) },
-    });
-
-    const atualizado = await tx.orcamento.update({
-      where: { id: orcamento.id },
-      data: { valorCalculado: novoValor, valorAtual: novoValor },
-    });
-
-    await tx.orcamentoHistorico.create({
-      data: { orcamentoId: orcamento.id, valor: novoValor },
-    });
-
-    return atualizado;
-  });
-
-  const orcamentoCompleto = await prisma.orcamento.findFirst({
-    where: { id: orcamentoAtualizado.id },
-    include: INCLUDE_DETALHE,
-  });
-
-  res.status(201).json(orcamentoCompleto);
-});
-
-// DELETE /orcamentos/:id/cores/:corId - remove uma cor extra de um orçamento pendente e recalcula o valor
-// (mesma lógica de custo puro do POST acima, pra manter a subtração simétrica à soma)
-orcamentosRouter.delete("/:id/cores/:corId", async (req, res) => {
-  const orcamento = await prisma.orcamento.findFirst({
-    where: { id: req.params.id, usuarioId: req.usuarioId },
-    include: { coresExtras: { include: { filamento: true } } },
-  });
-  if (!orcamento) {
-    return res.status(404).json({ erro: "Orçamento não encontrado" });
-  }
-  if (orcamento.status !== "PENDENTE") {
-    return res.status(400).json({ erro: "Só é possível remover cores de orçamentos pendentes" });
-  }
-
-  const cor = orcamento.coresExtras.find((item) => item.id === req.params.corId);
-  if (!cor) {
-    return res.status(404).json({ erro: "Cor extra não encontrada" });
-  }
-  if (cor.filamento.precoPorGrama === null) {
-    return res.status(400).json({ erro: "Filamento sem preço por grama definido. Reabasteça ou recadastre o filamento." });
-  }
-
-  const custoCor = decimalToNumber(cor.filamento.precoPorGrama) * decimalToNumber(cor.pesoUsadoG);
-  const novoValor = arredondar(decimalToNumber(orcamento.valorCalculado) - custoCor);
-
-  const orcamentoAtualizado = await prisma.$transaction(async (tx) => {
-    await tx.orcamentoFilamentoExtra.delete({ where: { id: cor.id } });
 
     const atualizado = await tx.orcamento.update({
       where: { id: orcamento.id },
