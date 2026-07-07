@@ -208,6 +208,24 @@ pro WhatsApp.
   não pra uma rota de um router client-side (o projeto não tem um). `App.tsx` detecta
   esse caminho no primeiro carregamento (`window.location.pathname`) pra abrir a tela
   direto, e limpa a URL (`history.replaceState`) ao voltar pro login
+- O backend Express também sabe servir o frontend compilado (`express.static` +
+  rota coringa devolvendo `index.html` pra qualquer caminho fora de `/api/`, em
+  `server.ts`), pra testar tudo atrás de um único túnel (Cloudflare Tunnel) numa porta
+  só, sem hospedagem. Isso só ativa se a pasta `frontend/dist` existir no disco
+  (`fs.existsSync`) — sem build feito, o backend se comporta exatamente como antes, os
+  dois processos separados (`vite dev` + `tsx watch`) continuam sendo o fluxo normal do
+  dia a dia. A rota coringa exclui explicitamente caminhos começando com `/api/`, pra um
+  endpoint inexistente continuar dando 404 em vez de devolver a página HTML por engano
+- `frontend/src/api/client.ts`'s `API_URL` verifica especificamente `!== undefined`
+  (não uma checagem de falsy tipo `||`), porque uma string vazia definida de propósito
+  em `VITE_API_URL` significa "caminho relativo, sem domínio fixo" — necessário no modo
+  consolidado, onde quem abre o link do túnel roda o app no aparelho dele, não no
+  computador de quem hospeda, então `localhost` seria endereço errado. `frontend/.env.production`
+  fixa `VITE_API_URL=/api` (relativo, mas mantendo o prefixo `/api` que as rotas do
+  backend exigem) — assim um `npm run build` puro já produz o build certo pro modo
+  consolidado, sem precisar passar variável de ambiente na mão. `.env` (usado por
+  `vite dev`) continua com a URL absoluta de sempre, então o fluxo de desenvolvimento
+  normal não muda
 
 ## Já construído e testado
 
@@ -252,6 +270,11 @@ pro WhatsApp.
     Resend com link de token de uso único (validade de 1 hora, resposta sempre genérica
     pra não revelar quais emails existem), tela de redefinir senha usando o mesmo
     `CampoSenha`
+15. Modo consolidado pra teste via túnel: backend serve o frontend compilado (estático +
+    rota coringa de SPA) na mesma porta da API, ativado automaticamente quando
+    `frontend/dist` existe. Testado rodando só o backend em `http://localhost:3333` e
+    confirmando login, cadastro de filamento, cálculo e criação de orçamento — tudo
+    funcionando na porta única, sem quebrar o fluxo normal de dois processos separados
 
 ## Pendente
 

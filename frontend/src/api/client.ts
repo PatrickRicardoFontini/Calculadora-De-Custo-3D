@@ -19,7 +19,12 @@ import type {
 } from "../types";
 import { limparToken, obterToken } from "../lib/auth";
 
-const API_URL = import.meta.env.VITE_API_URL as string;
+// Verifica especificamente "undefined" (não uma checagem de falsy): uma string vazia
+// definida de propósito significa "caminho relativo, sem domínio fixo" (modo consolidado
+// atrás de túnel, onde front e back são servidos pelo mesmo processo/origem) e precisa
+// ser respeitada, não cair no padrão de desenvolvimento local
+const API_URL: string =
+  import.meta.env.VITE_API_URL !== undefined ? import.meta.env.VITE_API_URL : "http://localhost:3333/api";
 
 function headersComAuth(extra?: Record<string, string>): HeadersInit {
   const token = obterToken();

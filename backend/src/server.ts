@@ -1,5 +1,7 @@
 import "dotenv/config";
 import cors from "cors";
+import fs from "node:fs";
+import path from "node:path";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { autenticacao } from "./middleware/autenticacao";
 import { authRouter } from "./routes/auth";
@@ -29,6 +31,22 @@ app.use("/api/clientes", autenticacao, clientesRouter);
 app.use("/api/orcamentos", autenticacao, orcamentosRouter);
 app.use("/api/receita", autenticacao, receitaRouter);
 app.use("/api/maquinas", autenticacao, maquinasRouter);
+
+// Serve os arquivos do frontend já compilados (`npm run build` em /frontend), pra rodar
+// tudo num processo só atrás de um único túnel. Só registra se a pasta existir — no
+// dia a dia com os dois processos separados (frontend via Vite em :5173) essa pasta não
+// existe, então nada muda no fluxo normal de desenvolvimento.
+const FRONTEND_DIST = path.resolve(__dirname, "../../frontend/dist");
+if (fs.existsSync(FRONTEND_DIST)) {
+  app.use(express.static(FRONTEND_DIST));
+  // Rota coringa: qualquer caminho que não bateu com uma rota de API acima cai aqui e
+  // recebe o index.html, pra navegação do lado do cliente continuar funcionando. Exclui
+  // caminhos que começam com /api/ pra um endpoint inexistente continuar dando 404 em
+  // vez de silenciosamente devolver a página HTML.
+  app.get(/^\/(?!api\/).*/, (_req, res) => {
+    res.sendFile(path.join(FRONTEND_DIST, "index.html"));
+  });
+}
 
 // Middleware de erro central: precisa ser o último registrado. Cobre tanto erros
 // encaminhados pelo asyncHandler das rotas quanto erros do próprio Express (ex.: JSON
