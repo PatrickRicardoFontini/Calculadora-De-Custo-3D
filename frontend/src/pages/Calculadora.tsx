@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { calcularOrcamento, criarOrcamento, listarClientes, listarFilamentos, listarMaquinas } from "../api/client";
 import type { CalculoResultado, Cliente, Filamento, Maquina, NovaCorAdicional, NovoExtra, Usuario } from "../types";
+import { Dica } from "../components/Dica";
 
 interface CalculadoraProps {
   usuario: Usuario;
@@ -306,7 +307,12 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
                 />
               </div>
               <div className="campo">
-                <label htmlFor="custoEnergiaHora">Custo de energia por hora (R$)</label>
+                <label htmlFor="custoEnergiaHora">
+                  Custo de energia por hora (R$)
+                  {!maquinaId && (
+                    <Dica texto="Esse campo preenche sozinho se você cadastrar uma máquina na aba Máquinas. Na dúvida, pode deixar como zero por enquanto." />
+                  )}
+                </label>
                 <input
                   id="custoEnergiaHora"
                   required
@@ -321,7 +327,12 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
                 )}
               </div>
               <div className="campo">
-                <label htmlFor="taxaDepreciacaoHora">Depreciação por hora (R$)</label>
+                <label htmlFor="taxaDepreciacaoHora">
+                  Depreciação por hora (R$)
+                  {!maquinaId && (
+                    <Dica texto="Esse campo preenche sozinho se você cadastrar uma máquina na aba Máquinas. Na dúvida, pode deixar como zero por enquanto." />
+                  )}
+                </label>
                 <input
                   id="taxaDepreciacaoHora"
                   required
@@ -333,7 +344,10 @@ export function Calculadora({ usuario, aoSalvarOrcamento }: CalculadoraProps) {
                 />
               </div>
               <div className="campo">
-                <label htmlFor="margemPercentual">Margem de lucro (%)</label>
+                <label htmlFor="margemPercentual">
+                  Margem de lucro (%)
+                  <Dica texto="Percentual somado sobre o custo pra chegar no preço de venda. Uma margem de 50%, por exemplo, significa vender por 1,5x o que custou pra você." />
+                </label>
                 <input
                   id="margemPercentual"
                   required

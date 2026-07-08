@@ -8,7 +8,8 @@ import { Login } from "./pages/Login";
 import { Registro } from "./pages/Registro";
 import { EsqueciSenha } from "./pages/EsqueciSenha";
 import { RedefinirSenha } from "./pages/RedefinirSenha";
-import { buscarUsuarioAtual } from "./api/client";
+import { BoasVindas } from "./components/BoasVindas";
+import { buscarUsuarioAtual, listarFilamentos, listarOrcamentos } from "./api/client";
 import { limparToken, obterToken } from "./lib/auth";
 import type { Usuario } from "./types";
 import "./App.css";
@@ -37,6 +38,12 @@ function obterTemaInicial(): Tema {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+// Chave de dispensa da mensagem de boas-vindas, por conta — sinal de "conta nova" é
+// calculado (zero filamentos e zero orçamentos), não é um campo salvo no banco
+function chaveBoasVindas(usuarioId: string): string {
+  return `boasVindasVista_${usuarioId}`;
+}
+
 function App() {
   const [aba, setAba] = useState<Aba>("estoque");
   const [usuario, setUsuario] = useState<Usuario | null>(null);
@@ -44,10 +51,32 @@ function App() {
   const [modoAuth, setModoAuth] = useState<ModoAuth>(obterModoAuthInicial);
   const [tema, setTema] = useState<Tema>(obterTemaInicial);
   const [gavetaAberta, setGavetaAberta] = useState(false);
+  const [mostrarBoasVindas, setMostrarBoasVindas] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", tema);
   }, [tema]);
+
+  useEffect(() => {
+    if (!usuario) return;
+    if (localStorage.getItem(chaveBoasVindas(usuario.id))) return;
+
+    Promise.all([listarFilamentos(), listarOrcamentos()])
+      .then(([filamentos, orcamentos]) => {
+        if (filamentos.length === 0 && orcamentos.length === 0) {
+          setMostrarBoasVindas(true);
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuario?.id]);
+
+  function fecharBoasVindas() {
+    if (usuario) {
+      localStorage.setItem(chaveBoasVindas(usuario.id), "1");
+    }
+    setMostrarBoasVindas(false);
+  }
 
   useEffect(() => {
     document.body.style.overflow = gavetaAberta ? "hidden" : "";
@@ -125,6 +154,7 @@ function App() {
 
   return (
     <div className="app-shell">
+      {mostrarBoasVindas && <BoasVindas aoFechar={fecharBoasVindas} />}
       <header className="barra-mobile">
         <button className="botao-hamburguer" onClick={() => setGavetaAberta(true)} aria-label="Abrir menu">
           <span />

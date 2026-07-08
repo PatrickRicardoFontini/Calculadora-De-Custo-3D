@@ -147,6 +147,11 @@ export function Estoque() {
     }
   }
 
+  function irParaFormularioCadastro() {
+    document.getElementById("tipo")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    document.getElementById("tipo")?.focus();
+  }
+
   function abrirReabastecer(filamentoId: string) {
     setPainel({ filamentoId, modo: "reabastecer" });
     setQuantidadeReabastecer("");
@@ -318,7 +323,12 @@ export function Estoque() {
       {carregando ? (
         <p>Carregando...</p>
       ) : filamentos.length === 0 ? (
-        <p>Nenhum filamento cadastrado ainda.</p>
+        <div className="estado-vazio">
+          <p>Você ainda não tem filamentos cadastrados. Cadastre o primeiro pra poder calcular orçamentos.</p>
+          <button type="button" className="botao-primario" onClick={irParaFormularioCadastro}>
+            Cadastrar meu primeiro filamento
+          </button>
+        </div>
       ) : (
         <div className="lista-filamentos">
           {filamentos.map((f) => {

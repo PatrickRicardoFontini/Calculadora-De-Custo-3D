@@ -9,6 +9,7 @@ import {
 } from "../api/client";
 import type { Maquina, Usuario } from "../types";
 import { MODELOS_MAQUINA, OUTRA_MAQUINA, VIDA_UTIL_SUGERIDA_HORAS } from "../lib/maquinas";
+import { Dica } from "../components/Dica";
 
 const valoresIniciais = {
   nome: "",
@@ -178,7 +179,10 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
       <form className="formulario formulario-config" onSubmit={handleSalvarConfig}>
         <div className="grupo-config">
           <div className="campo">
-            <label htmlFor="precoKwh">Preço do kWh(R$)</label>
+            <label htmlFor="precoKwh">
+              Preço do kWh(R$)
+              <Dica texto='Esse valor está na sua conta de luz, geralmente listado como "tarifa" ou "valor do kWh".' />
+            </label>
             <input
               id="precoKwh"
               type="number"
@@ -189,7 +193,10 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
             />
           </div>
           <div className="campo">
-            <label htmlFor="margemPadrao">Margem de lucro padrão(%)</label>
+            <label htmlFor="margemPadrao">
+              Margem de lucro padrão(%)
+              <Dica texto="Percentual somado sobre o custo pra chegar no preço de venda. Uma margem de 50%, por exemplo, significa vender por 1,5x o que custou pra você." />
+            </label>
             <input
               id="margemPadrao"
               type="number"
@@ -200,7 +207,10 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
             />
           </div>
           <div className="campo">
-            <label htmlFor="margemExtrasPadrao">Margem de extras(%)</label>
+            <label htmlFor="margemExtrasPadrao">
+              Margem de extras(%)
+              <Dica texto="Margem separada, só pra itens extras do orçamento (como embalagem ou acessórios) — não é a mesma margem de lucro principal do filamento e da máquina." />
+            </label>
             <input
               id="margemExtrasPadrao"
               type="number"
@@ -287,7 +297,10 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
           />
         </div>
         <div className="campo">
-          <label htmlFor="vidaUtilHoras">Vida útil estimada (horas)</label>
+          <label htmlFor="vidaUtilHoras">
+            Vida útil estimada (horas)
+            <Dica texto="Quantas horas a máquina deve durar até precisar trocar peças importantes. Na dúvida, use um valor aproximado — dá pra ajustar depois." />
+          </label>
           <input
             id="vidaUtilHoras"
             required
@@ -318,7 +331,10 @@ export function Maquinas({ usuario, aoAtualizarUsuario }: MaquinasProps) {
       {carregando ? (
         <p>Carregando...</p>
       ) : maquinas.length === 0 ? (
-        <p>Nenhuma máquina cadastrada ainda.</p>
+        <p className="estado-vazio">
+          Nenhuma máquina cadastrada ainda. Isso é opcional, mas cadastrar sua impressora preenche automaticamente
+          energia e depreciação na calculadora.
+        </p>
       ) : (
         <div className="tabela-scroll">
           <table className="tabela">

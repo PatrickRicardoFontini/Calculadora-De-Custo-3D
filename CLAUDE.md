@@ -237,6 +237,22 @@ pro WhatsApp.
   existe tela de edição geral de filamento (tipo/marca/preço não são editáveis depois de
   criados, só via Reabastecer pra preço/estoque) — decisão consciente do dono do projeto
   pra manter o escopo mínimo necessário
+- Ajuda contextual pra quem não conhece o vocabulário do negócio: componente `Dica`
+  (`frontend/src/components/Dica.tsx`), um ícone "?" que mostra um texto curto ao passar
+  o mouse ou tocar/clicar (os dois gatilhos juntos, não só hover, porque hover sozinho
+  não é confiável em touch). Isso é orientação de conteúdo pra usuário leigo, não
+  acessibilidade técnica (leitor de tela, navegação por teclado) — não confundir os dois
+  tipos de trabalho se um dia isso for revisitado. Nos campos de energia/depreciação por
+  hora da Calculadora, a dica só aparece quando nenhuma máquina está selecionada
+  (`!maquinaId`), já que depois de selecionar uma máquina os campos preenchem sozinhos e
+  a dica perde o sentido
+- "Conta nova" (pra decidir se mostra a mensagem de boas-vindas) é um sinal calculado no
+  frontend — zero filamentos e zero orçamentos ao carregar `App.tsx` — não um campo
+  salvo no banco, conforme pedido explicitamente. A dispensa da mensagem (pra não voltar
+  a aparecer depois de fechada, mesmo que a conta continue "nova" nesse sentido) é
+  persistida em `localStorage` por conta (`boasVindasVista_{usuarioId}`), verificada
+  antes de sequer buscar filamentos/orçamentos — uma conta já dispensada, ou qualquer
+  conta com algum dado, nunca dispara essas duas requisições extras no login
 
 ## Já construído e testado
 
@@ -294,6 +310,17 @@ pro WhatsApp.
     Reabastecer/Ver movimentações. Testado com filamento sem `corHex` (mostra indicador
     cinza neutro), com `corHex` escolhido na criação, editando a cor de um já existente,
     e em mobile (375px)
+17. Orientação e ajuda contextual pra quem usa a aplicação pela primeira vez: ícone de
+    dica em preço do kWh, vida útil da máquina, custo de energia/depreciação por hora
+    (só quando preenchidos manualmente, sem máquina selecionada), margem de lucro e
+    margem de custos extras; estados vazios com orientação nas abas Estoque (com botão
+    que leva ao formulário de cadastro) e Máquinas (deixando claro que é opcional);
+    mensagem de boas-vindas na primeira vez (conta sem filamento e sem orçamento), que
+    não volta a aparecer depois de fechada. Testado criando uma conta nova de teste:
+    mensagem de boas-vindas apareceu, foi fechada e não reapareceu num recarregamento
+    seguinte nem passou a aparecer numa conta com dados; dicas testadas em cada campo
+    (inclusive o desaparecimento das dicas de energia/depreciação ao selecionar uma
+    máquina); estados vazios testados nas duas abas; tudo verificado em mobile também
 
 ## Pendente
 
