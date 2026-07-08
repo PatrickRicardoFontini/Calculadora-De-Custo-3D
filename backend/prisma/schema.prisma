@@ -63,6 +63,7 @@ model Filamento {
   usuario        Usuario            @relation(fields: [usuarioId], references: [id])
   tipo           String
   cor            String
+  corHex         String?
   marca          String?
   pesoTotalG     Decimal            @db.Decimal(10, 2)
   pesoAtualG     Decimal            @db.Decimal(10, 2)

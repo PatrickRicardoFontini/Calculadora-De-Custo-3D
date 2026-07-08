@@ -5,6 +5,8 @@ import { asyncHandler } from "../lib/asyncHandler";
 
 export const filamentosRouter = Router();
 
+const REGEX_COR_HEX = /^#[0-9A-Fa-f]{6}$/;
+
 function validarCamposFilamento(body: any, { parcial }: { parcial: boolean }) {
   const erros: string[] = [];
   const campos = ["tipo", "cor", "precoPorKg", "pesoTotalG", "estoqueMinimoG"];
@@ -21,6 +23,15 @@ function validarCamposFilamento(body: any, { parcial }: { parcial: boolean }) {
         erros.push(`Campo numérico inválido: ${campoNumerico}`);
       }
     }
+  }
+
+  if (
+    body.corHex !== undefined &&
+    body.corHex !== null &&
+    body.corHex !== "" &&
+    !REGEX_COR_HEX.test(body.corHex)
+  ) {
+    erros.push("Campo 'corHex' inválido — use o formato #RRGGBB");
   }
 
   return erros;
@@ -64,7 +75,7 @@ filamentosRouter.post(
       return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
     }
 
-    const { tipo, cor, marca, precoPorKg, pesoTotalG, estoqueMinimoG } = req.body;
+    const { tipo, cor, corHex, marca, precoPorKg, pesoTotalG, estoqueMinimoG } = req.body;
     const precoPorKgNum = Number(precoPorKg);
     const pesoTotalGNum = Number(pesoTotalG);
 
@@ -73,6 +84,7 @@ filamentosRouter.post(
         usuarioId: req.usuarioId,
         tipo: String(tipo).slice(0, 100),
         cor: String(cor).slice(0, 100),
+        corHex: corHex || null,
         marca: marca ? String(marca).slice(0, 100) : null,
         pesoTotalG: pesoTotalGNum,
         pesoAtualG: pesoTotalGNum,
@@ -102,13 +114,14 @@ filamentosRouter.put(
       return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
     }
 
-    const { tipo, cor, marca, precoPorKg, pesoTotalG, pesoAtualG, estoqueMinimoG } = req.body;
+    const { tipo, cor, corHex, marca, precoPorKg, pesoTotalG, pesoAtualG, estoqueMinimoG } = req.body;
 
     const filamento = await prisma.filamento.update({
       where: { id: existente.id },
       data: {
         ...(tipo !== undefined && { tipo: String(tipo).slice(0, 100) }),
         ...(cor !== undefined && { cor: String(cor).slice(0, 100) }),
+        ...(corHex !== undefined && { corHex: corHex || null }),
         ...(marca !== undefined && { marca: marca ? String(marca).slice(0, 100) : null }),
         ...(precoPorKg !== undefined && { precoPorGrama: Number(precoPorKg) / 1000 }),
         ...(pesoTotalG !== undefined && { pesoTotalG: Number(pesoTotalG) }),

@@ -77,11 +77,11 @@ pro WhatsApp.
 - Texto e containers: `overflow-wrap: break-word` está no `body` (`index.css`) e vale
   por herança pra qualquer texto novo, não precisa repetir por componente — só reforçar
   explicitamente em `pre`/textos que já têm regra própria de `white-space`
-- Tabela de filamentos (Estoque) vira cartão empilhado abaixo do breakpoint: classe
-  `.tabela-cartoes` + atributo `data-label` em cada `<td>` (mostrado via `::before` no
-  CSS), `<thead>` escondido, cada `<tr>` vira um cartão com borda/sombra própria — essa
-  é a tabela mais citada como "caso especial", as outras (Máquinas, Receita,
-  detalhamento da Calculadora) usam o fallback mais simples abaixo
+- Filamentos (Estoque) não usa mais tabela: é `.lista-filamentos`/`.card-filamento`
+  (mesmo padrão de cartão do `.card-orcamento`) sempre, em qualquer largura — não existe
+  mais o caso especial de tabela-vira-cartão-só-no-mobile que essa tela tinha antes. As
+  outras (Máquinas, Receita, detalhamento da Calculadora) continuam usando o fallback
+  mais simples abaixo
 - Qualquer outra tabela (`.tabela`) só ganha scroll horizontal controlado abaixo do
   breakpoint: envolver em `<div className="tabela-scroll">`, que aplica
   `overflow-x: auto` e `white-space: nowrap` nas células só nesse breakpoint — não
@@ -226,6 +226,17 @@ pro WhatsApp.
   consolidado, sem precisar passar variável de ambiente na mão. `.env` (usado por
   `vite dev`) continua com a URL absoluta de sempre, então o fluxo de desenvolvimento
   normal não muda
+- `Filamento.corHex` é opcional (String, tipo `#RRGGBB`, validado por regex no backend),
+  preenchido por um `<input type="color">` ao lado do campo de texto `cor` (que continua
+  sendo o nome livre, tipo "Verde Militar" — os dois campos coexistem, um não substitui
+  o outro). Filamento sem `corHex` (todo cadastro anterior a essa mudança) mostra um
+  indicador cinza neutro (`var(--text-secondary)`) em vez de tentar adivinhar a cor pelo
+  nome. **Cor só é editável isoladamente após a criação** — clicar no indicador do
+  cartão abre um seletor de cor inline que só manda `corHex` pro `PUT /filamentos/:id`
+  (que já aceitava o campo desde a criação do endpoint, só não tinha UI pra isso); não
+  existe tela de edição geral de filamento (tipo/marca/preço não são editáveis depois de
+  criados, só via Reabastecer pra preço/estoque) — decisão consciente do dono do projeto
+  pra manter o escopo mínimo necessário
 
 ## Já construído e testado
 
@@ -275,6 +286,14 @@ pro WhatsApp.
     `frontend/dist` existe. Testado rodando só o backend em `http://localhost:3333` e
     confirmando login, cadastro de filamento, cálculo e criação de orçamento — tudo
     funcionando na porta única, sem quebrar o fluxo normal de dois processos separados
+16. Tela de Filamentos cadastrados (Estoque) redesenhada em cartões (`.card-filamento`)
+    no lugar da tabela HTML antiga: indicador de cor de verdade (`corHex`, opcional,
+    editável isoladamente clicando no círculo), alerta de estoque baixo destacando o
+    cartão inteiro (borda esquerda dourada + badge "Estoque baixo"), ações lado a lado
+    com Excluir menor/discreto (ícone de lixeira) em vez de competir visualmente com
+    Reabastecer/Ver movimentações. Testado com filamento sem `corHex` (mostra indicador
+    cinza neutro), com `corHex` escolhido na criação, editando a cor de um já existente,
+    e em mobile (375px)
 
 ## Pendente
 

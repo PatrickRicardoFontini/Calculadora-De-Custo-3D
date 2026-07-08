@@ -158,6 +158,15 @@ export async function criarFilamento(dados: NovoFilamento): Promise<Filamento> {
   return tratarResposta(resposta);
 }
 
+export async function atualizarCorFilamento(id: string, corHex: string): Promise<Filamento> {
+  const resposta = await fetch(`${API_URL}/filamentos/${id}`, {
+    method: "PUT",
+    headers: headersComAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ corHex }),
+  });
+  return tratarResposta(resposta);
+}
+
 export async function excluirFilamento(id: string): Promise<void> {
   const resposta = await fetch(`${API_URL}/filamentos/${id}`, {
     method: "DELETE",

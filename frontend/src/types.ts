@@ -18,6 +18,7 @@ export interface Filamento {
   id: string;
   tipo: string;
   cor: string;
+  corHex: string | null;
   marca: string | null;
   pesoTotalG: string;
   pesoAtualG: string;
@@ -29,6 +30,7 @@ export interface Filamento {
 export interface NovoFilamento {
   tipo: string;
   cor: string;
+  corHex?: string;
   marca?: string;
   precoPorKg: number;
   pesoTotalG: number;

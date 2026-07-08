@@ -464,67 +464,120 @@
   border-bottom: none;
 }
 
-.linha-alerta {
-  background: var(--gold-dim);
+.lista-filamentos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-@media (max-width: 768px) {
-  .tabela-cartoes {
-    border: none;
-    box-shadow: none;
-    background: none;
-  }
-
-  .tabela-cartoes thead {
-    display: none;
-  }
-
-  .tabela-cartoes,
-  .tabela-cartoes tbody,
-  .tabela-cartoes tr,
-  .tabela-cartoes td {
-    display: block;
-    width: 100%;
-  }
-
-  .tabela-cartoes tr {
-    background: var(--surface);
-    border: var(--card-border-width) solid var(--border);
-    border-radius: var(--card-radius);
-    box-shadow: var(--card-shadow);
-    padding: 12px 14px;
-    margin-bottom: 12px;
-  }
-
-  .tabela-cartoes td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 6px 0;
-    border-bottom: none;
-    text-align: right;
-  }
-
-  .tabela-cartoes td[data-label]::before {
-    content: attr(data-label);
-    font-family: var(--font-titulo);
-    font-weight: 500;
-    font-size: 13px;
-    color: var(--text-secondary);
-    text-align: left;
-  }
-
-  .tabela-cartoes td.celula-acoes {
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
+.card-filamento {
+  background: var(--surface);
+  border: var(--card-border-width) solid var(--border);
+  border-left: 6px solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: 14px 18px;
 }
 
-.badge-alerta {
-  color: var(--gold-text-on-dim);
-  font-weight: 600;
+.card-filamento.estoque-baixo {
+  border-left-color: var(--gold);
+}
+
+.card-filamento-cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.identidade-filamento {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.indicador-cor {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--text-secondary);
+  padding: 0;
+  cursor: pointer;
+}
+
+.indicador-cor:hover {
+  border-color: var(--green);
+}
+
+.edicao-cor {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input-cor,
+.edicao-cor input[type="color"] {
+  width: 36px;
+  height: 36px;
+  padding: 2px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.campo input[type="color"] {
+  padding: 4px;
+  height: 42px;
+  cursor: pointer;
+}
+
+.card-filamento-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.stat-filamento {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-filamento span {
   font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.acoes-filamento {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.botao-excluir-discreto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: none;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+.botao-excluir-discreto:hover {
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
 .botao-secundario {
@@ -566,7 +619,8 @@
 .botao-perigo,
 .botao-whatsapp,
 .link-acao,
-.filtros-status button {
+.filtros-status button,
+.botao-excluir-discreto {
   box-shadow: var(--card-shadow);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -577,7 +631,8 @@
 .botao-perigo:not(:disabled):hover,
 .botao-whatsapp:not(:disabled):hover,
 .link-acao:not(:disabled):hover,
-.filtros-status button:not(:disabled):hover {
+.filtros-status button:not(:disabled):hover,
+.botao-excluir-discreto:not(:disabled):hover {
   transform: translate(-1px, -1px);
   box-shadow: var(--card-shadow-hover);
 }
@@ -588,7 +643,8 @@
 .botao-perigo:not(:disabled):active,
 .botao-whatsapp:not(:disabled):active,
 .link-acao:not(:disabled):active,
-.filtros-status button:not(:disabled):active {
+.filtros-status button:not(:disabled):active,
+.botao-excluir-discreto:not(:disabled):active {
   transform: translate(4px, 4px);
   box-shadow: none;
 }

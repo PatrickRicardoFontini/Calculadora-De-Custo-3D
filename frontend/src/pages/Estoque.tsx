@@ -1,5 +1,6 @@
-import { Fragment, useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
+  atualizarCorFilamento,
   criarFilamento,
   excluirFilamento,
   listarFilamentos,
@@ -9,14 +10,38 @@ import {
 import type { Filamento, MovimentoEstoque } from "../types";
 import { MARCAS_INTERNACIONAIS, MARCAS_NACIONAIS, OUTRA_MARCA } from "../lib/marcas";
 
+const COR_HEX_PADRAO = "#9CA3AF";
+
 const valoresIniciais = {
   tipo: "",
   cor: "",
+  corHex: "",
   marca: "",
   precoPorKg: "",
   pesoTotalKg: "",
   estoqueMinimoG: "",
 };
+
+function IconeLixeira() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
 
 type Painel = { filamentoId: string; modo: "reabastecer" | "movimentos" } | null;
 
@@ -33,6 +58,10 @@ export function Estoque() {
   const [precoReabastecer, setPrecoReabastecer] = useState("");
   const [processando, setProcessando] = useState(false);
   const [movimentosPorFilamento, setMovimentosPorFilamento] = useState<Record<string, MovimentoEstoque[]>>({});
+
+  const [editandoCorId, setEditandoCorId] = useState<string | null>(null);
+  const [corEditada, setCorEditada] = useState(COR_HEX_PADRAO);
+  const [salvandoCor, setSalvandoCor] = useState(false);
 
   async function carregar() {
     setCarregando(true);
@@ -73,6 +102,7 @@ export function Estoque() {
       await criarFilamento({
         tipo: form.tipo,
         cor: form.cor,
+        corHex: form.corHex || undefined,
         marca: form.marca || undefined,
         precoPorKg: Number(form.precoPorKg),
         pesoTotalG: Number(form.pesoTotalKg) * 1000,
@@ -95,6 +125,25 @@ export function Estoque() {
       await carregar();
     } catch (err) {
       setErro((err as Error).message);
+    }
+  }
+
+  function iniciarEdicaoCor(filamento: Filamento) {
+    setEditandoCorId(filamento.id);
+    setCorEditada(filamento.corHex || COR_HEX_PADRAO);
+  }
+
+  async function salvarCor(id: string) {
+    setSalvandoCor(true);
+    setErro(null);
+    try {
+      await atualizarCorFilamento(id, corEditada);
+      setEditandoCorId(null);
+      await carregar();
+    } catch (err) {
+      setErro((err as Error).message);
+    } finally {
+      setSalvandoCor(false);
     }
   }
 
@@ -171,6 +220,15 @@ export function Estoque() {
             placeholder="Preto"
             value={form.cor}
             onChange={(e) => atualizarCampo("cor", e.target.value)}
+          />
+        </div>
+        <div className="campo">
+          <label htmlFor="corHex">Cor visual (opcional)</label>
+          <input
+            id="corHex"
+            type="color"
+            value={form.corHex || COR_HEX_PADRAO}
+            onChange={(e) => atualizarCampo("corHex", e.target.value)}
           />
         </div>
         <div className="campo">
@@ -262,120 +320,148 @@ export function Estoque() {
       ) : filamentos.length === 0 ? (
         <p>Nenhum filamento cadastrado ainda.</p>
       ) : (
-        <table className="tabela tabela-cartoes">
-          <thead>
-            <tr>
-              <th>Tipo</th>
-              <th>Cor</th>
-              <th>Marca</th>
-              <th>Preço/g</th>
-              <th>Total comprado</th>
-              <th>Peso atual</th>
-              <th>Estoque mínimo</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filamentos.map((f) => {
-              const abaixoDoMinimo = parseFloat(f.pesoAtualG) < parseFloat(f.estoqueMinimoG);
-              const painelAberto = painel?.filamentoId === f.id ? painel.modo : null;
+        <div className="lista-filamentos">
+          {filamentos.map((f) => {
+            const abaixoDoMinimo = parseFloat(f.pesoAtualG) < parseFloat(f.estoqueMinimoG);
+            const painelAberto = painel?.filamentoId === f.id ? painel.modo : null;
+            const emEdicaoCor = editandoCorId === f.id;
 
-              return (
-                <Fragment key={f.id}>
-                  <tr className={abaixoDoMinimo ? "linha-alerta" : ""}>
-                    <td data-label="Tipo">{f.tipo}</td>
-                    <td data-label="Cor">{f.cor}</td>
-                    <td data-label="Marca">{f.marca || "—"}</td>
-                    <td className="numero" data-label="Preço/g">
+            return (
+              <div key={f.id} className={abaixoDoMinimo ? "card-filamento estoque-baixo" : "card-filamento"}>
+                <div className="card-filamento-cabecalho">
+                  <div className="identidade-filamento">
+                    {emEdicaoCor ? (
+                      <span className="edicao-cor">
+                        <input
+                          type="color"
+                          autoFocus
+                          value={corEditada}
+                          onChange={(e) => setCorEditada(e.target.value)}
+                        />
+                        <button className="botao-primario" disabled={salvandoCor} onClick={() => salvarCor(f.id)}>
+                          Salvar
+                        </button>
+                        <button className="botao-secundario" onClick={() => setEditandoCorId(null)}>
+                          Cancelar
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="indicador-cor"
+                        style={f.corHex ? { background: f.corHex } : undefined}
+                        onClick={() => iniciarEdicaoCor(f)}
+                        title={f.corHex ? "Editar cor" : "Escolher cor"}
+                        aria-label={f.corHex ? "Editar cor" : "Escolher cor"}
+                      />
+                    )}
+                    <span>
+                      <strong>{f.tipo}</strong> · {f.cor}
+                      {f.marca && <span className="detalhe-secundario"> · {f.marca}</span>}
+                    </span>
+                  </div>
+                  {abaixoDoMinimo && <span className="badge-status badge-pendente">Estoque baixo</span>}
+                </div>
+
+                <div className="card-filamento-info">
+                  <div className="stat-filamento">
+                    <span>Preço/g</span>
+                    <strong className="numero">
                       {f.precoPorGrama ? `R$ ${parseFloat(f.precoPorGrama).toFixed(4)}` : "—"}
-                    </td>
-                    <td className="numero" data-label="Total comprado">{parseFloat(f.pesoTotalG).toFixed(0)} g</td>
-                    <td data-label="Peso atual">
-                      <span className="numero">{parseFloat(f.pesoAtualG).toFixed(0)} g</span>
-                      {abaixoDoMinimo && <span className="badge-alerta"> abaixo do mínimo</span>}
-                    </td>
-                    <td className="numero" data-label="Estoque mínimo">{parseFloat(f.estoqueMinimoG).toFixed(0)} g</td>
-                    <td className="celula-acoes">
-                      <button className="botao-secundario" onClick={() => abrirReabastecer(f.id)}>
-                        Reabastecer
-                      </button>
-                      <button className="link-acao" onClick={() => alternarMovimentos(f.id)}>
-                        {painelAberto === "movimentos" ? "Ocultar movimentações" : "Ver movimentações"}
-                      </button>
-                      <button className="botao-perigo" onClick={() => handleExcluir(f.id)}>
-                        Excluir
-                      </button>
-                    </td>
-                  </tr>
-                  {painelAberto === "reabastecer" && (
-                    <tr key={`${f.id}-reabastecer`}>
-                      <td colSpan={8}>
-                        <div className="painel-inline">
-                          <label htmlFor={`quantidade-${f.id}`}>Quantidade comprada (kg)</label>
-                          <input
-                            id={`quantidade-${f.id}`}
-                            type="number"
-                            min="0"
-                            step="0.001"
-                            value={quantidadeReabastecer}
-                            onChange={(e) => setQuantidadeReabastecer(e.target.value)}
-                          />
-                          <label htmlFor={`preco-${f.id}`}>Preço por kg nessa compra (R$)</label>
-                          <input
-                            id={`preco-${f.id}`}
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={precoReabastecer}
-                            onChange={(e) => setPrecoReabastecer(e.target.value)}
-                          />
-                          <button
-                            className="botao-primario"
-                            disabled={processando}
-                            onClick={() => confirmarReabastecimento(f.id)}
-                          >
-                            Confirmar
-                          </button>
-                          <button className="botao-secundario" onClick={() => setPainel(null)}>
-                            Cancelar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  {painelAberto === "movimentos" && (
-                    <tr key={`${f.id}-movimentos`}>
-                      <td colSpan={8}>
-                        <div className="painel-inline painel-movimentos">
-                          {!movimentosPorFilamento[f.id] ? (
-                            <p>Carregando movimentações...</p>
-                          ) : movimentosPorFilamento[f.id].length === 0 ? (
-                            <p>Nenhuma movimentação registrada ainda.</p>
-                          ) : (
-                            <ul>
-                              {movimentosPorFilamento[f.id].map((m) => (
-                                <li key={m.id}>
-                                  <span className={`badge-movimento badge-${m.tipo.toLowerCase()}`}>
-                                    {m.tipo === "ENTRADA" ? "Entrada" : "Saída"}
-                                  </span>{" "}
-                                  <span className="numero">
-                                    {parseFloat(m.quantidadeG).toFixed(0)}g
-                                    {m.precoPorKg && ` (R$ ${parseFloat(m.precoPorKg).toFixed(2)}/kg)`}
-                                  </span>{" "}
-                                  — {new Date(m.data).toLocaleString("pt-BR")}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                    </strong>
+                  </div>
+                  <div className="stat-filamento">
+                    <span>Peso atual</span>
+                    <strong className="numero">{parseFloat(f.pesoAtualG).toFixed(0)} g</strong>
+                  </div>
+                  <div className="stat-filamento">
+                    <span>Total comprado</span>
+                    <strong className="numero">{parseFloat(f.pesoTotalG).toFixed(0)} g</strong>
+                  </div>
+                  <div className="stat-filamento">
+                    <span>Estoque mínimo</span>
+                    <strong className="numero">{parseFloat(f.estoqueMinimoG).toFixed(0)} g</strong>
+                  </div>
+                </div>
+
+                <div className="acoes-filamento">
+                  <button className="botao-secundario" onClick={() => abrirReabastecer(f.id)}>
+                    Reabastecer
+                  </button>
+                  <button className="link-acao" onClick={() => alternarMovimentos(f.id)}>
+                    {painelAberto === "movimentos" ? "Ocultar movimentações" : "Ver movimentações"}
+                  </button>
+                  <button
+                    className="botao-excluir-discreto"
+                    onClick={() => handleExcluir(f.id)}
+                    title="Excluir filamento"
+                    aria-label="Excluir filamento"
+                  >
+                    <IconeLixeira />
+                  </button>
+                </div>
+
+                {painelAberto === "reabastecer" && (
+                  <div className="painel-inline">
+                    <label htmlFor={`quantidade-${f.id}`}>Quantidade comprada (kg)</label>
+                    <input
+                      id={`quantidade-${f.id}`}
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      value={quantidadeReabastecer}
+                      onChange={(e) => setQuantidadeReabastecer(e.target.value)}
+                    />
+                    <label htmlFor={`preco-${f.id}`}>Preço por kg nessa compra (R$)</label>
+                    <input
+                      id={`preco-${f.id}`}
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={precoReabastecer}
+                      onChange={(e) => setPrecoReabastecer(e.target.value)}
+                    />
+                    <button
+                      className="botao-primario"
+                      disabled={processando}
+                      onClick={() => confirmarReabastecimento(f.id)}
+                    >
+                      Confirmar
+                    </button>
+                    <button className="botao-secundario" onClick={() => setPainel(null)}>
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+
+                {painelAberto === "movimentos" && (
+                  <div className="painel-inline painel-movimentos">
+                    {!movimentosPorFilamento[f.id] ? (
+                      <p>Carregando movimentações...</p>
+                    ) : movimentosPorFilamento[f.id].length === 0 ? (
+                      <p>Nenhuma movimentação registrada ainda.</p>
+                    ) : (
+                      <ul>
+                        {movimentosPorFilamento[f.id].map((m) => (
+                          <li key={m.id}>
+                            <span className={`badge-movimento badge-${m.tipo.toLowerCase()}`}>
+                              {m.tipo === "ENTRADA" ? "Entrada" : "Saída"}
+                            </span>{" "}
+                            <span className="numero">
+                              {parseFloat(m.quantidadeG).toFixed(0)}g
+                              {m.precoPorKg && ` (R$ ${parseFloat(m.precoPorKg).toFixed(2)}/kg)`}
+                            </span>{" "}
+                            — {new Date(m.data).toLocaleString("pt-BR")}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
