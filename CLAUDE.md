@@ -275,6 +275,38 @@ pro WhatsApp.
   `Orcamento`, num único `prisma.$transaction([...])` em array-form (mesmo padrão do
   DELETE de `Filamento`). `Venda`/`MovimentoEstoque` não entram nessa limpeza porque só
   existem depois do aceite (status ACEITO), então nunca existem pra um orçamento PENDENTE
+- `Venda.orcamentoId` é opcional (`String?`), pra permitir venda lançada direto (sem
+  passar pelo fluxo de calcular/criar orçamento) — já tem a peça pronta em estoque e
+  vendeu por um valor combinado. `Venda` ganhou `clienteId` (opcional, relação direta com
+  `Cliente`, separada da relação indireta via `Orcamento`) e `descricao` (só preenchida
+  quando não vem de orçamento, já que com orçamento o material já descreve o que foi
+  vendido). Não existe `filamentoId`/`pesoUsadoG` direto em `Venda`: o material de uma
+  venda direta com desconto de estoque é lido através do próprio `MovimentoEstoque`
+  vinculado (`Venda.movimentos`), evitando um campo redundante
+- A lógica de baixa de estoque (criar `MovimentoEstoque` de saída, decrementar
+  `Filamento.pesoAtualG`, checar se ficou abaixo do mínimo) foi extraída pra
+  `lib/estoque.ts` (`descontarEstoque` e `calcularEstoqueBaixo`), compartilhada entre o
+  aceite de orçamento (`PUT /orcamentos/:id/status`) e `POST /vendas` — não duplica a
+  mesma transação em dois lugares
+- `validarClienteInput` (`lib/clienteOrcamento.ts`) ganhou um terceiro parâmetro opcional
+  `{ obrigatorio }` (default `true`, preservando o comportamento de sempre em
+  `POST /orcamentos` e `PUT /orcamentos/:id/cliente`): em `POST /vendas` o cliente é
+  totalmente opcional (`{ obrigatorio: false }`), então "nem clienteId nem clienteNome"
+  não é erro nesse caso — só valida o formato de clienteNome/clienteWhatsapp quando um
+  dos dois é de fato informado
+- `POST /vendas` aceita no máximo um filamento (sem suporte a multi-cor, que continua
+  exclusivo do fluxo de orçamento) — `filamentoId` e `pesoUsadoG` juntos são opcionais
+  como um par: informar só um dos dois é erro de validação. Quando vem `dataVenda` (do
+  `<input type="date">`, formato `YYYY-MM-DD`), o backend monta a data via componentes
+  numéricos (`new Date(ano, mes-1, dia)`, meia-noite local) em vez de `new Date(string)`
+  (que interpreta string de data pura como meia-noite UTC): isso evitava que a data
+  exibida "voltasse" um dia pra quem está num fuso atrás de UTC, como o Brasil
+- `GET /receita/vendas` agora lida com dois formatos de venda na mesma resposta: quando
+  `venda.orcamento` existe, os campos vêm dele como sempre (cliente, filamento, horas,
+  valorCalculado); quando não existe (venda direta), `clienteNome`/`descricao` vêm da
+  própria `Venda` e o material (quando houve desconto de estoque) vem do primeiro
+  `MovimentoEstoque` vinculado — `horasImpressao` e `valorCalculado` ficam `null` nesse
+  caso, já que só fazem sentido pra um orçamento calculado
 
 ## Já construído e testado
 
@@ -352,6 +384,20 @@ pro WhatsApp.
     bem-sucedida em pendente; exclusão bloqueada com erro claro em aceito e em recusado) e
     depois no navegador (edição de cliente nos três status, botão de excluir aparecendo só
     no pendente, exclusão removendo o orçamento da lista de verdade após confirmação)
+19. Venda lançada direto na Receita, sem passar pelo fluxo de calcular/criar orçamento
+    (peça que já estava pronta em estoque, vendida por um valor combinado): botão
+    "Lançar venda" abre formulário com descrição, valor, data (pré-preenchida com hoje),
+    cliente opcional (existente ou novo, mesmo padrão de sempre) e uma opção "Descontar
+    do estoque" que, quando marcada, revela filamento + peso usado (no máximo um
+    material, sem suporte a multi-cor). Reaproveita a mesma lógica de baixa de estoque já
+    usada no aceite de orçamento (`lib/estoque.ts`). Testado via script cobrindo venda
+    sem cliente/sem estoque, com cliente existente, com cliente novo + desconto de
+    estoque (conferindo a baixa), validação de filamentoId sem pesoUsadoG e de descrição
+    ausente, confirmando que o fluxo antigo (orçamento aceito) continua gerando venda
+    normalmente e que `GET /receita/vendas` mostra os dois formatos juntos sem quebrar; e
+    depois no navegador, testando os três cenários de principal a fim (sem cliente,
+    cliente existente, cliente novo com desconto de estoque) e conferindo o desconto real
+    na aba Estoque
 
 ## Pendente
 

@@ -6,6 +6,7 @@ import type {
   Maquina,
   MovimentoEstoque,
   NovaMaquina,
+  NovaVenda,
   NovoCliente,
   NovoFilamento,
   NovoOrcamento,
@@ -16,6 +17,7 @@ import type {
   StatusOrcamento,
   TrocaClienteOrcamento,
   Usuario,
+  VendaComEstoque,
   VendaDoMes,
 } from "../types";
 import { limparToken, obterToken } from "../lib/auth";
@@ -311,5 +313,14 @@ export async function listarReceitaMensal(): Promise<ReceitaMensal[]> {
 
 export async function listarVendasDoMes(mes: string): Promise<VendaDoMes[]> {
   const resposta = await fetch(`${API_URL}/receita/vendas?mes=${mes}`, { headers: headersComAuth() });
+  return tratarResposta(resposta);
+}
+
+export async function criarVenda(dados: NovaVenda): Promise<VendaComEstoque> {
+  const resposta = await fetch(`${API_URL}/vendas`, {
+    method: "POST",
+    headers: headersComAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify(dados),
+  });
   return tratarResposta(resposta);
 }

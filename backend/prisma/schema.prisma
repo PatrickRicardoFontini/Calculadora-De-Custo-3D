@@ -53,6 +53,7 @@ model Cliente {
   criadoEm   DateTime    @default(now())
 
   orcamentos Orcamento[]
+  vendas     Venda[]
 
   @@map("clientes")
 }
@@ -145,12 +146,20 @@ model OrcamentoHistorico {
   @@map("orcamento_historico")
 }
 
+// orcamentoId é opcional pra permitir venda lançada direto (sem passar pelo fluxo de
+// calcular/criar orçamento): já tem a peça pronta em estoque e vendeu por um valor
+// combinado. Nesse caso, clienteId (opcional) e descricao (só preenchida sem orçamento,
+// já que com orçamento o material já descreve o que foi vendido) substituem os dados que
+// viriam do Orcamento vinculado.
 model Venda {
   id          String             @id @default(uuid())
   usuarioId   String
   usuario     Usuario            @relation(fields: [usuarioId], references: [id])
-  orcamentoId String             @unique
-  orcamento   Orcamento          @relation(fields: [orcamentoId], references: [id])
+  orcamentoId String?            @unique
+  orcamento   Orcamento?         @relation(fields: [orcamentoId], references: [id])
+  clienteId   String?
+  cliente     Cliente?           @relation(fields: [clienteId], references: [id])
+  descricao   String?
   valorFinal  Decimal            @db.Decimal(10, 2)
   dataVenda   DateTime           @default(now())
 

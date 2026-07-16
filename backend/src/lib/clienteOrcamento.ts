@@ -3,13 +3,23 @@ import type { PrismaClient } from "@prisma/client";
 export const CLIENTE_NOME_MAX_LENGTH = 150;
 export const CLIENTE_WHATSAPP_MAX_LENGTH = 30;
 
-// Validação compartilhada entre criar orçamento (POST /orcamentos) e trocar o cliente de
-// um orçamento existente (PUT /orcamentos/:id/cliente): aceita um cliente já cadastrado
-// (clienteId) ou dados pra criar um novo na hora (clienteNome + clienteWhatsapp opcional)
-export function validarClienteInput(clienteId: unknown, clienteNome: unknown, clienteWhatsapp: unknown): string[] {
+// Validação compartilhada entre criar orçamento (POST /orcamentos), trocar o cliente de
+// um orçamento existente (PUT /orcamentos/:id/cliente) e lançar uma venda direta (POST
+// /vendas): aceita um cliente já cadastrado (clienteId) ou dados pra criar um novo na
+// hora (clienteNome + clienteWhatsapp opcional). Em orçamento o cliente é obrigatório;
+// em venda direta é opcional (`obrigatorio: false`), então "nenhum dos dois" só vira erro
+// quando o chamador exige cliente
+export function validarClienteInput(
+  clienteId: unknown,
+  clienteNome: unknown,
+  clienteWhatsapp: unknown,
+  { obrigatorio = true }: { obrigatorio?: boolean } = {}
+): string[] {
   const erros: string[] = [];
   if (!clienteId && !clienteNome) {
-    erros.push("Informe clienteId de um cliente existente ou clienteNome para criar um novo");
+    if (obrigatorio) {
+      erros.push("Informe clienteId de um cliente existente ou clienteNome para criar um novo");
+    }
   } else if (!clienteId) {
     if (typeof clienteNome !== "string" || !clienteNome.trim()) {
       erros.push("Campo 'clienteNome' inválido");

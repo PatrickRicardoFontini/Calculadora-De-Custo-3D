@@ -73,22 +73,47 @@ receitaRouter.get(
       orcamento: {
         include: { cliente: true, filamento: true },
       },
+      cliente: true,
+      movimentos: { include: { filamento: true } },
     },
     orderBy: { dataVenda: "desc" },
   });
 
-  const resultado = vendas.map((venda) => ({
-    id: venda.id,
-    dataVenda: venda.dataVenda,
-    clienteNome: venda.orcamento.cliente.nome,
-    filamentoTipo: venda.orcamento.filamento.tipo,
-    filamentoCor: venda.orcamento.filamento.cor,
-    filamentoMarca: venda.orcamento.filamento.marca,
-    pesoUsadoG: decimalToNumber(venda.orcamento.pesoUsadoG),
-    horasImpressao: decimalToNumber(venda.orcamento.horasImpressao),
-    valorFinal: decimalToNumber(venda.valorFinal),
-    valorCalculado: decimalToNumber(venda.orcamento.valorCalculado),
-  }));
+  // Venda lançada direto (sem orçamento por trás) não tem material/cliente vindo de um
+  // Orcamento — usa o filamento do próprio MovimentoEstoque (no máximo um, já que venda
+  // direta não suporta multi-cor) e o cliente/descrição gravados na própria Venda
+  const resultado = vendas.map((venda) => {
+    if (venda.orcamento) {
+      return {
+        id: venda.id,
+        dataVenda: venda.dataVenda,
+        clienteNome: venda.orcamento.cliente.nome,
+        descricao: null,
+        filamentoTipo: venda.orcamento.filamento.tipo,
+        filamentoCor: venda.orcamento.filamento.cor,
+        filamentoMarca: venda.orcamento.filamento.marca,
+        pesoUsadoG: decimalToNumber(venda.orcamento.pesoUsadoG),
+        horasImpressao: decimalToNumber(venda.orcamento.horasImpressao),
+        valorFinal: decimalToNumber(venda.valorFinal),
+        valorCalculado: decimalToNumber(venda.orcamento.valorCalculado),
+      };
+    }
+
+    const movimento = venda.movimentos[0];
+    return {
+      id: venda.id,
+      dataVenda: venda.dataVenda,
+      clienteNome: venda.cliente?.nome ?? null,
+      descricao: venda.descricao,
+      filamentoTipo: movimento?.filamento.tipo ?? null,
+      filamentoCor: movimento?.filamento.cor ?? null,
+      filamentoMarca: movimento?.filamento.marca ?? null,
+      pesoUsadoG: movimento ? decimalToNumber(movimento.quantidadeG) : null,
+      horasImpressao: null,
+      valorFinal: decimalToNumber(venda.valorFinal),
+      valorCalculado: null,
+    };
+  });
 
   res.json(resultado);
   })

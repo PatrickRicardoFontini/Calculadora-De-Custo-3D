@@ -10,6 +10,7 @@ import {
 } from "../lib/calculo";
 import { buscarItensFilamentoExtras, validarCoresAdicionais } from "../lib/coresAdicionais";
 import { clienteExistente, validarClienteInput } from "../lib/clienteOrcamento";
+import { calcularEstoqueBaixo, descontarEstoque } from "../lib/estoque";
 import { USUARIO_SELECT_SEGURO } from "../lib/usuarioSelect";
 import { decimalToNumber } from "../lib/decimal";
 import { MODELO_PADRAO_WHATSAPP, dadosDoOrcamento, renderizarMensagemWhatsapp } from "../lib/mensagemWhatsapp";
@@ -610,26 +611,7 @@ orcamentosRouter.put(
         },
       });
 
-      const resultados = [];
-      for (const item of itensEstoque) {
-        await tx.movimentoEstoque.create({
-          data: {
-            filamentoId: item.filamentoId,
-            vendaId: venda.id,
-            quantidadeG: item.pesoUsadoG,
-            tipo: "SAIDA",
-          },
-        });
-
-        resultados.push(
-          await tx.filamento.update({
-            where: { id: item.filamentoId },
-            data: { pesoAtualG: { decrement: item.pesoUsadoG } },
-          })
-        );
-      }
-
-      return resultados;
+      return descontarEstoque(tx, venda.id, itensEstoque);
     });
 
     const orcamentoCompleto = await prisma.orcamento.findFirst({
@@ -637,9 +619,7 @@ orcamentosRouter.put(
       include: INCLUDE_PADRAO,
     });
 
-    const estoqueBaixo = filamentosAtualizados.some(
-      (filamento) => decimalToNumber(filamento.pesoAtualG) < decimalToNumber(filamento.estoqueMinimoG)
-    );
+    const estoqueBaixo = calcularEstoqueBaixo(filamentosAtualizados);
 
     res.json({ ...orcamentoCompleto, estoqueBaixo });
   })

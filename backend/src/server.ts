@@ -11,6 +11,8 @@ import { clientesRouter } from "./routes/clientes";
 import { orcamentosRouter } from "./routes/orcamentos";
 import { receitaRouter } from "./routes/receita";
 import { maquinasRouter } from "./routes/maquinas";
+import { vendasRouter } from "./routes/vendas";
+import { prisma } from "./lib/prisma";
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -19,8 +21,21 @@ const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "http://localhost:5173";
 app.use(cors({ origin: ALLOWED_ORIGIN }));
 app.use(express.json());
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+// Confere conexão real com o banco (não só que o processo Express subiu), pra quem chama
+// (ex.: o app desktop Electron, esperando o backend ficar pronto antes de abrir a janela)
+// conseguir distinguir "backend não subiu" de "banco inacessível" e mostrar uma mensagem
+// específica em vez de travar sem explicação
+app.get("/health", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok" });
+  } catch (err) {
+    console.error("Falha ao conectar no banco de dados:", err);
+    res.status(503).json({
+      status: "erro",
+      mensagem: "Não consegui conectar ao banco de dados. Confirma que o MySQL do XAMPP está rodando.",
+    });
+  }
 });
 
 app.use("/api/auth", authRouter);
@@ -31,6 +46,7 @@ app.use("/api/clientes", autenticacao, clientesRouter);
 app.use("/api/orcamentos", autenticacao, orcamentosRouter);
 app.use("/api/receita", autenticacao, receitaRouter);
 app.use("/api/maquinas", autenticacao, maquinasRouter);
+app.use("/api/vendas", autenticacao, vendasRouter);
 
 // Serve os arquivos do frontend já compilados (`npm run build` em /frontend), pra rodar
 // tudo num processo só atrás de um único túnel. Só registra se a pasta existir — no

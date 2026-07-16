@@ -202,15 +202,41 @@ export interface ReceitaMensal {
   quantidadeVendas: number;
 }
 
+// Campos ficam nulos quando a venda foi lançada direto (sem orçamento por trás): não há
+// horasImpressao/valorCalculado (só existem no cálculo de um orçamento), e
+// cliente/material são opcionais nesse fluxo
 export interface VendaDoMes {
   id: string;
   dataVenda: string;
-  clienteNome: string;
-  filamentoTipo: string;
-  filamentoCor: string;
+  clienteNome: string | null;
+  descricao: string | null;
+  filamentoTipo: string | null;
+  filamentoCor: string | null;
   filamentoMarca: string | null;
-  pesoUsadoG: number;
-  horasImpressao: number;
+  pesoUsadoG: number | null;
+  horasImpressao: number | null;
   valorFinal: number;
-  valorCalculado: number;
+  valorCalculado: number | null;
+}
+
+export interface NovaVenda {
+  descricao: string;
+  valorFinal: number;
+  dataVenda?: string;
+  clienteId?: string;
+  clienteNome?: string;
+  clienteWhatsapp?: string;
+  filamentoId?: string;
+  pesoUsadoG?: number;
+}
+
+export interface VendaComEstoque {
+  id: string;
+  orcamentoId: string | null;
+  clienteId: string | null;
+  descricao: string | null;
+  valorFinal: string;
+  dataVenda: string;
+  cliente: Cliente | null;
+  estoqueBaixo: boolean;
 }
