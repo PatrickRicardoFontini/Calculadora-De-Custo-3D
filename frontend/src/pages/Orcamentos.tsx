@@ -6,10 +6,13 @@ import {
   atualizarValorOrcamento,
   buscarMensagemWhatsapp,
   buscarOrcamento,
+  excluirOrcamento,
+  listarClientes,
   listarOrcamentos,
   removerExtra,
+  trocarClienteOrcamento,
 } from "../api/client";
-import type { Orcamento, StatusOrcamento } from "../types";
+import type { Cliente, Orcamento, StatusOrcamento } from "../types";
 import { formatarTelefoneWhatsapp, montarLinkWhatsapp } from "../lib/whatsapp";
 
 type Filtro = "TODOS" | StatusOrcamento;
@@ -44,6 +47,19 @@ export function Orcamentos() {
 
   const [editandoNomeId, setEditandoNomeId] = useState<string | null>(null);
   const [nomeEditado, setNomeEditado] = useState("");
+
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [editandoClienteId, setEditandoClienteId] = useState<string | null>(null);
+  const [modoClienteEdicao, setModoClienteEdicao] = useState<"existente" | "novo">("existente");
+  const [clienteIdEditado, setClienteIdEditado] = useState("");
+  const [novoClienteNomeEditado, setNovoClienteNomeEditado] = useState("");
+  const [novoClienteWhatsappEditado, setNovoClienteWhatsappEditado] = useState("");
+
+  useEffect(() => {
+    listarClientes()
+      .then(setClientes)
+      .catch(() => {});
+  }, []);
 
   async function carregar() {
     setCarregando(true);
@@ -80,6 +96,57 @@ export function Orcamentos() {
       const atualizado = await atualizarNomeOrcamento(id, nomeEditado.trim());
       setOrcamentos((atual) => atual.map((o) => (o.id === atualizado.id ? atualizado : o)));
       setEditandoNomeId(null);
+    } catch (err) {
+      setErro((err as Error).message);
+    } finally {
+      setProcessandoId(null);
+    }
+  }
+
+  function iniciarEdicaoCliente(orcamento: Orcamento) {
+    setEditandoClienteId(orcamento.id);
+    setModoClienteEdicao("existente");
+    setClienteIdEditado(orcamento.clienteId);
+    setNovoClienteNomeEditado("");
+    setNovoClienteWhatsappEditado("");
+  }
+
+  async function salvarCliente(id: string) {
+    if (modoClienteEdicao === "novo" && !novoClienteNomeEditado.trim()) {
+      setErro("Informe o nome do cliente");
+      return;
+    }
+    setProcessandoId(id);
+    setErro(null);
+    try {
+      const atualizado = await trocarClienteOrcamento(
+        id,
+        modoClienteEdicao === "existente"
+          ? { clienteId: clienteIdEditado }
+          : { clienteNome: novoClienteNomeEditado.trim(), clienteWhatsapp: novoClienteWhatsappEditado.trim() || undefined }
+      );
+      setOrcamentos((atual) => atual.map((o) => (o.id === atualizado.id ? atualizado : o)));
+      if (modoClienteEdicao === "novo") {
+        listarClientes()
+          .then(setClientes)
+          .catch(() => {});
+      }
+      setEditandoClienteId(null);
+    } catch (err) {
+      setErro((err as Error).message);
+    } finally {
+      setProcessandoId(null);
+    }
+  }
+
+  async function excluirOrcamentoConfirmado(id: string) {
+    if (!confirm("Tem certeza? Essa ação não pode ser desfeita.")) return;
+    setProcessandoId(id);
+    setErro(null);
+    try {
+      await excluirOrcamento(id);
+      setOrcamentos((atual) => atual.filter((o) => o.id !== id));
+      if (expandidoId === id) setExpandidoId(null);
     } catch (err) {
       setErro((err as Error).message);
     } finally {
@@ -330,6 +397,61 @@ export function Orcamentos() {
                   )}
 
                   {expandidoId === orcamento.id && (
+                    <div className="secao-cliente">
+                      <h4>Cliente</h4>
+                      {editandoClienteId === orcamento.id ? (
+                        <div className="painel-inline">
+                          <select
+                            value={modoClienteEdicao}
+                            onChange={(e) => setModoClienteEdicao(e.target.value as "existente" | "novo")}
+                          >
+                            <option value="existente" disabled={clientes.length === 0}>
+                              Cliente já cadastrado
+                            </option>
+                            <option value="novo">Novo cliente</option>
+                          </select>
+                          {modoClienteEdicao === "existente" ? (
+                            <select value={clienteIdEditado} onChange={(e) => setClienteIdEditado(e.target.value)}>
+                              {clientes.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.nome} {c.whatsapp ? `(${c.whatsapp})` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <>
+                              <input
+                                placeholder="Nome do cliente"
+                                value={novoClienteNomeEditado}
+                                onChange={(e) => setNovoClienteNomeEditado(e.target.value)}
+                              />
+                              <input
+                                placeholder="WhatsApp (opcional)"
+                                value={novoClienteWhatsappEditado}
+                                onChange={(e) => setNovoClienteWhatsappEditado(e.target.value)}
+                              />
+                            </>
+                          )}
+                          <button className="botao-primario" disabled={processando} onClick={() => salvarCliente(orcamento.id)}>
+                            Salvar
+                          </button>
+                          <button className="botao-secundario" onClick={() => setEditandoClienteId(null)}>
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <p>
+                          {orcamento.cliente.nome}
+                          {orcamento.cliente.whatsapp && <span className="detalhe-secundario"> · {orcamento.cliente.whatsapp}</span>}{" "}
+                          <button className="link-acao" onClick={() => iniciarEdicaoCliente(orcamento)}>
+                            Editar cliente
+                          </button>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {expandidoId === orcamento.id && (
                     <div className="secao-extras">
                       <h4>Custos extras</h4>
                       {orcamento.extras.length > 0 ? (
@@ -390,6 +512,18 @@ export function Orcamentos() {
                           </li>
                         ))}
                       </ul>
+                    </div>
+                  )}
+
+                  {expandidoId === orcamento.id && orcamento.status === "PENDENTE" && (
+                    <div className="acoes-orcamento">
+                      <button
+                        className="botao-perigo"
+                        disabled={processando}
+                        onClick={() => excluirOrcamentoConfirmado(orcamento.id)}
+                      >
+                        Excluir orçamento
+                      </button>
                     </div>
                   )}
                 </div>

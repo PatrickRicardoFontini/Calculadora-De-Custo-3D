@@ -14,6 +14,7 @@ import type {
   ReceitaMensal,
   RespostaAuth,
   StatusOrcamento,
+  TrocaClienteOrcamento,
   Usuario,
   VendaDoMes,
 } from "../types";
@@ -244,6 +245,23 @@ export async function atualizarNomeOrcamento(id: string, nome: string): Promise<
     method: "PUT",
     headers: headersComAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify({ nome }),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function trocarClienteOrcamento(id: string, dados: TrocaClienteOrcamento): Promise<Orcamento> {
+  const resposta = await fetch(`${API_URL}/orcamentos/${id}/cliente`, {
+    method: "PUT",
+    headers: headersComAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify(dados),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function excluirOrcamento(id: string): Promise<void> {
+  const resposta = await fetch(`${API_URL}/orcamentos/${id}`, {
+    method: "DELETE",
+    headers: headersComAuth(),
   });
   return tratarResposta(resposta);
 }

@@ -898,7 +898,8 @@ button.botao-whatsapp:disabled {
   padding: 8px 4px;
 }
 
-.painel-inline input {
+.painel-inline input,
+.painel-inline select {
   background: var(--surface);
   color: var(--text-primary);
   padding: 6px 10px;
@@ -908,7 +909,8 @@ button.botao-whatsapp:disabled {
   max-width: 100%;
 }
 
-.painel-inline input:focus {
+.painel-inline input:focus,
+.painel-inline select:focus {
   outline: none;
   border-color: var(--green);
 }
@@ -1041,7 +1043,8 @@ button.botao-whatsapp:disabled {
   gap: 8px;
 }
 
-.secao-extras {
+.secao-extras,
+.secao-cliente {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px dashed var(--border);
@@ -1098,7 +1101,8 @@ button.botao-whatsapp:disabled {
   font-size: 13px;
 }
 
-.secao-extras h4 {
+.secao-extras h4,
+.secao-cliente h4 {
   margin: 0 0 6px;
   font-size: 13px;
   color: var(--text-secondary);

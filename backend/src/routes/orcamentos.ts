@@ -9,6 +9,7 @@ import {
   somarCustoExtras,
 } from "../lib/calculo";
 import { buscarItensFilamentoExtras, validarCoresAdicionais } from "../lib/coresAdicionais";
+import { clienteExistente, validarClienteInput } from "../lib/clienteOrcamento";
 import { USUARIO_SELECT_SEGURO } from "../lib/usuarioSelect";
 import { decimalToNumber } from "../lib/decimal";
 import { MODELO_PADRAO_WHATSAPP, dadosDoOrcamento, renderizarMensagemWhatsapp } from "../lib/mensagemWhatsapp";
@@ -20,7 +21,6 @@ export const orcamentosRouter = Router();
 const STATUS_VALIDOS: StatusOrcamento[] = ["PENDENTE", "ACEITO", "RECUSADO"];
 const NOME_MAX_LENGTH = 150;
 const DESCRICAO_EXTRA_MAX_LENGTH = 200;
-const WHATSAPP_MAX_LENGTH = 30;
 
 const INCLUDE_PADRAO = {
   cliente: true,
@@ -105,23 +105,7 @@ orcamentosRouter.post(
     } else if (typeof nome === "string" && nome.length > NOME_MAX_LENGTH) {
       erros.push(`Campo 'nome' excede o tamanho máximo de ${NOME_MAX_LENGTH} caracteres`);
     }
-    if (!clienteId && !clienteNome) {
-      erros.push("Informe clienteId de um cliente existente ou clienteNome para criar um novo");
-    } else if (!clienteId) {
-      if (typeof clienteNome !== "string" || !clienteNome.trim()) {
-        erros.push("Campo 'clienteNome' inválido");
-      } else if (clienteNome.length > NOME_MAX_LENGTH) {
-        erros.push(`Campo 'clienteNome' excede o tamanho máximo de ${NOME_MAX_LENGTH} caracteres`);
-      }
-      if (
-        clienteWhatsapp !== undefined &&
-        clienteWhatsapp !== null &&
-        clienteWhatsapp !== "" &&
-        String(clienteWhatsapp).length > WHATSAPP_MAX_LENGTH
-      ) {
-        erros.push(`Campo 'clienteWhatsapp' excede o tamanho máximo de ${WHATSAPP_MAX_LENGTH} caracteres`);
-      }
-    }
+    erros.push(...validarClienteInput(clienteId, clienteNome, clienteWhatsapp));
     for (const campo of ["pesoUsadoG", "horasImpressao", "margemPercentual"]) {
       const valor = req.body[campo];
       if (valor === undefined || valor === null || valor === "") {
@@ -199,10 +183,8 @@ orcamentosRouter.post(
     const itensFilamentoExtras = resultadoCores.itens;
 
     if (clienteId) {
-      const cliente = await prisma.cliente.findFirst({
-        where: { id: clienteId, usuarioId: req.usuarioId },
-      });
-      if (!cliente) {
+      const existe = await clienteExistente(prisma, req.usuarioId, clienteId);
+      if (!existe) {
         return res.status(404).json({ erro: "Cliente não encontrado" });
       }
     }
@@ -355,6 +337,60 @@ orcamentosRouter.put(
     });
 
     res.json(orcamentoAtualizado);
+  })
+);
+
+// PUT /orcamentos/:id/cliente - troca o cliente do orçamento, independente do status (só
+// organização/identificação, igual ao nome — não mexe em valor nem gera histórico)
+orcamentosRouter.put(
+  "/:id/cliente",
+  asyncHandler(async (req, res) => {
+    const { clienteId, clienteNome, clienteWhatsapp } = req.body;
+
+    const erros = validarClienteInput(clienteId, clienteNome, clienteWhatsapp);
+    if (erros.length > 0) {
+      return res.status(400).json({ erro: "Dados inválidos", detalhes: erros });
+    }
+
+    const orcamento = await prisma.orcamento.findFirst({
+      where: { id: req.params.id, usuarioId: req.usuarioId },
+    });
+    if (!orcamento) {
+      return res.status(404).json({ erro: "Orçamento não encontrado" });
+    }
+
+    if (clienteId) {
+      const existe = await clienteExistente(prisma, req.usuarioId, clienteId);
+      if (!existe) {
+        return res.status(404).json({ erro: "Cliente não encontrado" });
+      }
+    }
+
+    const orcamentoAtualizado = await prisma.$transaction(async (tx) => {
+      const clienteIdFinal = clienteId
+        ? clienteId
+        : (
+            await tx.cliente.create({
+              data: {
+                usuarioId: req.usuarioId,
+                nome: String(clienteNome).trim(),
+                whatsapp: clienteWhatsapp || null,
+              },
+            })
+          ).id;
+
+      return tx.orcamento.update({
+        where: { id: orcamento.id },
+        data: { clienteId: clienteIdFinal },
+      });
+    });
+
+    const orcamentoCompleto = await prisma.orcamento.findFirst({
+      where: { id: orcamentoAtualizado.id },
+      include: INCLUDE_PADRAO,
+    });
+
+    res.json(orcamentoCompleto);
   })
 );
 
@@ -629,5 +665,33 @@ orcamentosRouter.get(
     const mensagem = renderizarMensagemWhatsapp(template, dadosDoOrcamento(orcamento));
 
     res.json({ mensagem });
+  })
+);
+
+// DELETE /orcamentos/:id - exclui um orçamento criado por engano, só enquanto PENDENTE.
+// Aceito já tem venda e baixa de estoque reais vinculadas (fora de escopo apagar aqui);
+// recusado continua protegido por ser dado de negócio (taxa de conversão, histórico), não
+// erro de digitação
+orcamentosRouter.delete(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const orcamento = await prisma.orcamento.findFirst({
+      where: { id: req.params.id, usuarioId: req.usuarioId },
+    });
+    if (!orcamento) {
+      return res.status(404).json({ erro: "Orçamento não encontrado" });
+    }
+    if (orcamento.status !== "PENDENTE") {
+      return res.status(400).json({ erro: "Só é possível excluir orçamentos pendentes" });
+    }
+
+    await prisma.$transaction([
+      prisma.orcamentoHistorico.deleteMany({ where: { orcamentoId: orcamento.id } }),
+      prisma.orcamentoExtra.deleteMany({ where: { orcamentoId: orcamento.id } }),
+      prisma.orcamentoFilamentoExtra.deleteMany({ where: { orcamentoId: orcamento.id } }),
+      prisma.orcamento.delete({ where: { id: orcamento.id } }),
+    ]);
+
+    res.status(204).send();
   })
 );

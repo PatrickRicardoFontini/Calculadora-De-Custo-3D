@@ -178,6 +178,12 @@ export interface OrcamentoComEstoque extends Orcamento {
   estoqueBaixo: boolean;
 }
 
+export interface TrocaClienteOrcamento {
+  clienteId?: string;
+  clienteNome?: string;
+  clienteWhatsapp?: string;
+}
+
 export type TipoMovimento = "ENTRADA" | "SAIDA";
 
 export interface MovimentoEstoque {

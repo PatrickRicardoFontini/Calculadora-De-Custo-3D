@@ -253,6 +253,28 @@ pro WhatsApp.
   persistida em `localStorage` por conta (`boasVindasVista_{usuarioId}`), verificada
   antes de sequer buscar filamentos/orçamentos — uma conta já dispensada, ou qualquer
   conta com algum dado, nunca dispara essas duas requisições extras no login
+- `PUT /orcamentos/:id/cliente` troca o cliente do orçamento, independente do status
+  (pendente, aceito ou recusado) — mesmo raciocínio de `Orcamento.nome`: identidade do
+  cliente é só organização/identificação, não afeta valor nem gera registro de
+  histórico. Aceita `clienteId` de um cliente existente ou `clienteNome`/`clienteWhatsapp`
+  pra criar um novo na hora, mesmo padrão flexível já usado em `POST /orcamentos`.
+  Validação e ownership check foram extraídos pra `lib/clienteOrcamento.ts`
+  (`validarClienteInput` e `clienteExistente`), compartilhados entre os dois endpoints,
+  seguindo o mesmo padrão já estabelecido em `lib/coresAdicionais.ts`: a checagem de posse
+  do `clienteId` roda fora da `$transaction`, com `return res.status(404)` direto — nunca
+  `throw` de dentro da transação, porque o middleware de erro central só devolve mensagem
+  genérica ("Requisição inválida") pra qualquer erro lançado, o que apagaria a mensagem
+  específica "Cliente não encontrado"
+- `DELETE /orcamentos/:id` só exclui enquanto o status for PENDENTE, devolvendo erro
+  claro ("Só é possível excluir orçamentos pendentes") caso contrário. Motivo: aceito já
+  tem venda e baixa de estoque reais vinculadas (apagar destruiria registro financeiro,
+  fora de escopo); recusado continua protegido por ser dado de negócio (taxa de
+  conversão, histórico), não erro de digitação — mesma proteção de sempre. Como nenhuma
+  das tabelas filhas (`OrcamentoHistorico`, `OrcamentoExtra`, `OrcamentoFilamentoExtra`)
+  tem `onDelete: Cascade` no schema, a exclusão apaga as três manualmente antes do
+  `Orcamento`, num único `prisma.$transaction([...])` em array-form (mesmo padrão do
+  DELETE de `Filamento`). `Venda`/`MovimentoEstoque` não entram nessa limpeza porque só
+  existem depois do aceite (status ACEITO), então nunca existem pra um orçamento PENDENTE
 
 ## Já construído e testado
 
@@ -321,6 +343,15 @@ pro WhatsApp.
     seguinte nem passou a aparecer numa conta com dados; dicas testadas em cada campo
     (inclusive o desaparecimento das dicas de energia/depreciação ao selecionar uma
     máquina); estados vazios testados nas duas abas; tudo verificado em mobile também
+18. Trocar cliente de um orçamento (qualquer status) e excluir orçamento (só pendente):
+    seção "Cliente" no card expandido da aba Orçamentos com edição inline (troca pra
+    existente ou cria novo, mesmo padrão existente/novo da Calculadora), botão "Excluir
+    orçamento" visível só quando pendente, com confirmação explícita antes de excluir de
+    verdade. Testado via script cobrindo os três status (troca de cliente funcionando em
+    pendente/aceito/recusado, tanto pra cliente existente quanto criando um novo; exclusão
+    bem-sucedida em pendente; exclusão bloqueada com erro claro em aceito e em recusado) e
+    depois no navegador (edição de cliente nos três status, botão de excluir aparecendo só
+    no pendente, exclusão removendo o orçamento da lista de verdade após confirmação)
 
 ## Pendente
 
