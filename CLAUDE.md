@@ -306,7 +306,34 @@ pro WhatsApp.
   valorCalculado); quando não existe (venda direta), `clienteNome`/`descricao` vêm da
   própria `Venda` e o material (quando houve desconto de estoque) vem do primeiro
   `MovimentoEstoque` vinculado — `horasImpressao` e `valorCalculado` ficam `null` nesse
-  caso, já que só fazem sentido pra um orçamento calculado
+  caso, já que só fazem sentido pra um orçamento calculado. A resposta também expõe
+  `orcamentoId` e `clienteId` crus (além dos campos já derivados/formatados), pro
+  frontend decidir o que é editável e pré-preencher o formulário de edição sem precisar
+  de uma segunda requisição
+- `PUT /vendas/:id` edita `valorFinal` e `dataVenda` em qualquer venda (não mexe em
+  estoque nem gera histórico — `Venda` não tem um `OrcamentoHistorico` equivalente).
+  `descricao` e cliente (`clienteId`/`clienteNome`/`clienteWhatsapp`) só são aceitos
+  quando `orcamentoId` é nulo (venda direta); mandar esses campos numa venda vinda de
+  orçamento é erro 400 explícito ("só podem ser editados em vendas lançadas
+  diretamente"), porque cliente de uma venda-de-orçamento já é gerenciado do lado do
+  orçamento (`PUT /orcamentos/:id/cliente`) — evita ter dois controles pro mesmo dado
+- `DELETE /vendas/:id` pode derrubar receita e desfazer desconto de estoque ao mesmo
+  tempo, então é feito numa única `$transaction`: se a venda tinha `MovimentoEstoque`
+  vinculado (desconto que aconteceu na hora da venda), cria uma nova `ENTRADA` de
+  estorno pra cada filamento envolvido (mesma quantidade que saiu) via `estornarEstoque`
+  (`lib/estoque.ts`, contraparte de `descontarEstoque`) e incrementa
+  `Filamento.pesoAtualG` de volta. A `SAIDA` original não é apagada (continua existindo
+  como histórico) — só perde a referência da venda (`vendaId` → `null`), automaticamente
+  via `onDelete: SetNull` na relação `MovimentoEstoque.venda` (mesmo padrão já usado em
+  `Orcamento.maquinaId`), não precisa de código manual pra isso. Quando a venda vinha de
+  um orçamento aceito, o orçamento **não muda de status** — continua ACEITO, porque o
+  aceite em si é um fato histórico verdadeiro, a venda é que foi desfeita depois (tipo um
+  estorno/reembolso), são coisas diferentes
+- `MovimentoEstoque.observacao` (`String?`) guarda o motivo de uma entrada gerada
+  automaticamente pelo sistema (hoje só o estorno de venda excluída, texto "Estorno da
+  venda excluída em {data}", formato `pt-BR`) — `null` pra toda movimentação manual
+  (compra inicial, reabastecimento, saída de venda normal). Aparece no painel "Ver
+  movimentações" do Estoque quando presente
 
 ## Já construído e testado
 
@@ -398,6 +425,24 @@ pro WhatsApp.
     depois no navegador, testando os três cenários de principal a fim (sem cliente,
     cliente existente, cliente novo com desconto de estoque) e conferindo o desconto real
     na aba Estoque
+20. Editar e excluir vendas já registradas na Receita (tanto vindas de orçamento aceito
+    quanto vendas diretas): cada linha do histórico ganhou "Editar" (formulário inline
+    mostrando valor+data sempre, e descrição+cliente só quando é venda direta) e
+    "Excluir" com confirmação explícita, já que exclusão pode mexer em receita e estoque
+    ao mesmo tempo. Excluir uma venda com desconto de estoque devolve o estoque (nova
+    entrada de estorno, com observação explicando o motivo) sem apagar a saída original;
+    excluir a venda de um orçamento aceito não muda o status do orçamento. Testado via
+    script cobrindo edição de valor/data/descrição/cliente (existente e novo) numa venda
+    direta, edição de só valor/data numa venda de orçamento, rejeição ao tentar editar
+    descrição numa venda de orçamento, exclusão com estorno (conferindo o estoque
+    devolvido e a movimentação de entrada com a observação certa via "ver
+    movimentações"), exclusão sem estoque envolvido, e exclusão de venda de orçamento
+    confirmando que ele continua ACEITO depois; e depois no navegador, criando vendas de
+    verdade pela UI, editando uma venda direta (valor, data, descrição e cliente novo) e
+    conferindo a lista atualizada, confirmando que a edição de uma venda de orçamento só
+    mostra valor/data, e validando a exclusão com estorno (via chamada autenticada
+    simulando a confirmação, já que o `confirm()` nativo bloqueia automação de
+    navegador) conferindo o estoque devolvido e o orçamento permanecendo ACEITO
 
 ## Pendente
 

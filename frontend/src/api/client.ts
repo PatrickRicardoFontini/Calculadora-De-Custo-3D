@@ -2,6 +2,7 @@ import type {
   CalculoInput,
   CalculoResultado,
   Cliente,
+  EdicaoVenda,
   Filamento,
   Maquina,
   MovimentoEstoque,
@@ -321,6 +322,23 @@ export async function criarVenda(dados: NovaVenda): Promise<VendaComEstoque> {
     method: "POST",
     headers: headersComAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify(dados),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function atualizarVenda(id: string, dados: EdicaoVenda): Promise<void> {
+  const resposta = await fetch(`${API_URL}/vendas/${id}`, {
+    method: "PUT",
+    headers: headersComAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify(dados),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function excluirVenda(id: string): Promise<void> {
+  const resposta = await fetch(`${API_URL}/vendas/${id}`, {
+    method: "DELETE",
+    headers: headersComAuth(),
   });
   return tratarResposta(resposta);
 }

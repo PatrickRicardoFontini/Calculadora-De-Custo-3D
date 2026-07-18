@@ -192,6 +192,7 @@ export interface MovimentoEstoque {
   vendaId: string | null;
   quantidadeG: string;
   precoPorKg: string | null;
+  observacao: string | null;
   tipo: TipoMovimento;
   data: string;
 }
@@ -204,9 +205,12 @@ export interface ReceitaMensal {
 
 // Campos ficam nulos quando a venda foi lançada direto (sem orçamento por trás): não há
 // horasImpressao/valorCalculado (só existem no cálculo de um orçamento), e
-// cliente/material são opcionais nesse fluxo
+// cliente/material são opcionais nesse fluxo. orcamentoId decide se cliente/descrição são
+// editáveis (só em venda direta); clienteId é o dado bruto usado pra pré-preencher a edição
 export interface VendaDoMes {
   id: string;
+  orcamentoId: string | null;
+  clienteId: string | null;
   dataVenda: string;
   clienteNome: string | null;
   descricao: string | null;
@@ -228,6 +232,17 @@ export interface NovaVenda {
   clienteWhatsapp?: string;
   filamentoId?: string;
   pesoUsadoG?: number;
+}
+
+// valorFinal/dataVenda sempre obrigatórios; descricao/cliente só são aceitos pelo backend
+// quando a venda é direta (sem orçamento) — omitir os dois em venda de orçamento
+export interface EdicaoVenda {
+  valorFinal: number;
+  dataVenda: string;
+  descricao?: string;
+  clienteId?: string;
+  clienteNome?: string;
+  clienteWhatsapp?: string;
 }
 
 export interface VendaComEstoque {

@@ -178,9 +178,12 @@ model MovimentoEstoque {
   filamentoId String
   filamento   Filamento     @relation(fields: [filamentoId], references: [id])
   vendaId     String?
-  venda       Venda?        @relation(fields: [vendaId], references: [id])
+  // onDelete: SetNull — mesmo padrão de Orcamento.maquinaId: excluir a venda não apaga o
+  // movimento de saída original (fica como histórico), só perde a referência
+  venda       Venda?        @relation(fields: [vendaId], references: [id], onDelete: SetNull)
   quantidadeG Decimal       @db.Decimal(10, 2)
   precoPorKg  Decimal?      @db.Decimal(10, 2)
+  observacao  String?
   tipo        TipoMovimento
   data        DateTime      @default(now())
 

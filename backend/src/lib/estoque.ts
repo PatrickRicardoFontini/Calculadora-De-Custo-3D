@@ -37,3 +37,31 @@ export function calcularEstoqueBaixo(filamentosAtualizados: { pesoAtualG: Prisma
     (filamento) => decimalToNumber(filamento.pesoAtualG) < decimalToNumber(filamento.estoqueMinimoG)
   );
 }
+
+export interface ItemEstorno {
+  filamentoId: string;
+  quantidadeG: number;
+}
+
+// Devolve estoque ao excluir uma venda que tinha desconto vinculado: cria uma ENTRADA pra
+// cada filamento envolvido (sem vendaId — a venda está sendo excluída, não faz sentido
+// referenciar) e incrementa Filamento.pesoAtualG de volta. O(s) MovimentoEstoque de SAÍDA
+// originais não são tocados aqui — perdem a referência (vendaId → null) via onDelete:
+// SetNull no schema quando a venda é excluída, continuam existindo como histórico
+export async function estornarEstoque(tx: Prisma.TransactionClient, itens: ItemEstorno[], observacao: string) {
+  for (const item of itens) {
+    await tx.movimentoEstoque.create({
+      data: {
+        filamentoId: item.filamentoId,
+        quantidadeG: item.quantidadeG,
+        tipo: "ENTRADA",
+        observacao,
+      },
+    });
+
+    await tx.filamento.update({
+      where: { id: item.filamentoId },
+      data: { pesoAtualG: { increment: item.quantidadeG } },
+    });
+  }
+}

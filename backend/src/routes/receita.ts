@@ -86,6 +86,8 @@ receitaRouter.get(
     if (venda.orcamento) {
       return {
         id: venda.id,
+        orcamentoId: venda.orcamentoId,
+        clienteId: venda.clienteId,
         dataVenda: venda.dataVenda,
         clienteNome: venda.orcamento.cliente.nome,
         descricao: null,
@@ -102,6 +104,8 @@ receitaRouter.get(
     const movimento = venda.movimentos[0];
     return {
       id: venda.id,
+      orcamentoId: venda.orcamentoId,
+      clienteId: venda.clienteId,
       dataVenda: venda.dataVenda,
       clienteNome: venda.cliente?.nome ?? null,
       descricao: venda.descricao,

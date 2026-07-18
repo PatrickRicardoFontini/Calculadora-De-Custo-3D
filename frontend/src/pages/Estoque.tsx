@@ -462,6 +462,7 @@ export function Estoque() {
                               {m.precoPorKg && ` (R$ ${parseFloat(m.precoPorKg).toFixed(2)}/kg)`}
                             </span>{" "}
                             — {new Date(m.data).toLocaleString("pt-BR")}
+                            {m.observacao && <span className="detalhe-secundario"> — {m.observacao}</span>}
                           </li>
                         ))}
                       </ul>
