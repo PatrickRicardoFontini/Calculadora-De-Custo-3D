@@ -140,11 +140,13 @@ vendasRouter.post(
 // PUT /vendas/:id - edita valorFinal e dataVenda de qualquer venda (não mexe em estoque).
 // Descrição e cliente só são aceitos numa venda direta (sem orçamento por trás) — numa
 // venda vinda de orçamento aceito, cliente já é gerenciado do lado do orçamento (PUT
-// /orcamentos/:id/cliente), não duplica esse controle aqui
+// /orcamentos/:id/cliente), não duplica esse controle aqui. `pago` é opcional (omitir
+// mantém o valor atual) — é assim que o "marcar como pago" de um toque só na Receita
+// reaproveita esse mesmo endpoint sem precisar reenviar valorFinal/dataVenda
 vendasRouter.put(
   "/:id",
   asyncHandler(async (req, res) => {
-    const { valorFinal, dataVenda, descricao, clienteId, clienteNome, clienteWhatsapp } = req.body;
+    const { valorFinal, dataVenda, descricao, clienteId, clienteNome, clienteWhatsapp, pago } = req.body;
 
     const venda = await prisma.venda.findFirst({ where: { id: req.params.id, usuarioId: req.usuarioId } });
     if (!venda) {
@@ -166,6 +168,10 @@ vendasRouter.put(
     const dataVendaFinal = parseDataVenda(dataVenda);
     if (!dataVendaFinal) {
       erros.push("Campo obrigatório ausente ou inválido: dataVenda");
+    }
+
+    if (pago !== undefined && typeof pago !== "boolean") {
+      erros.push("Campo inválido: pago");
     }
 
     const mexeuEmClienteOuDescricao =
@@ -195,6 +201,14 @@ vendasRouter.put(
       }
     }
 
+    // Só mexe em dataPagamento quando `pago` de fato muda de estado: marcar como pago
+    // preenche a data automaticamente (o usuário não informa), desmarcar limpa a data,
+    // reenviar `pago: true` numa venda que já estava paga preserva a data original
+    let dadosPagamento: { pago?: boolean; dataPagamento?: Date | null } = {};
+    if (pago !== undefined && pago !== venda.pago) {
+      dadosPagamento = { pago, dataPagamento: pago ? new Date() : null };
+    }
+
     await prisma.$transaction(async (tx) => {
       let clienteIdFinal = venda.clienteId;
       if (!venda.orcamentoId) {
@@ -219,6 +233,7 @@ vendasRouter.put(
           valorFinal: Number(valorFinal),
           dataVenda: dataVendaFinal!,
           ...(venda.orcamentoId ? {} : { descricao: String(descricao).trim(), clienteId: clienteIdFinal }),
+          ...dadosPagamento,
         },
       });
     });

@@ -334,6 +334,29 @@ pro WhatsApp.
   venda excluída em {data}", formato `pt-BR`) — `null` pra toda movimentação manual
   (compra inicial, reabastecimento, saída de venda normal). Aparece no painel "Ver
   movimentações" do Estoque quando presente
+- `Venda.pago` (Boolean, default `false`) e `Venda.dataPagamento` (DateTime, opcional)
+  controlam se o dinheiro de uma venda já entrou de verdade ou ainda está pendente de
+  recebimento. A migration que introduziu os campos marcou todas as vendas já existentes
+  como `pago=true` com `dataPagamento` igual à própria `dataVenda` (presumidas já
+  resolvidas); só vendas criadas depois disso nascem `pago=false`, exigindo confirmação
+  explícita. Não existe endpoint dedicado pra marcar como pago: `PUT /vendas/:id` (o
+  mesmo endpoint de editar valor/data) aceita `pago` como campo opcional — omitir mantém
+  o valor atual, é assim que o atalho de "marcar como pago" de um toque só no frontend
+  reaproveita esse endpoint sem precisar reenviar o formulário de edição completo.
+  `dataPagamento` só é tocada quando `pago` de fato muda de estado (comparado contra o
+  valor atual no banco antes de decidir): transição pra `true` preenche com a data/hora
+  atual automaticamente (usuário não informa), transição pra `false` limpa pra `null`,
+  reenviar o mesmo valor que já estava salvo não mexe em nada — preserva a data real do
+  pagamento em vez de resetar pra "agora" a cada edição não relacionada
+- `GET /receita/mensal` retorna três totais por mês: `totalVendido` (soma de tudo, como
+  sempre), `totalRecebido` (soma só das vendas com `pago=true`) e `totalAReceber` (soma
+  só das com `pago=false`). Na aba Receita, o número em destaque do mês atual é
+  `totalRecebido` (caixa de verdade), não mais o total vendido bruto — `totalAReceber`
+  aparece como informação secundária, menos proeminente, ao lado. `GET /receita/vendas`
+  expõe `pago` por venda (nos dois formatos de resposta, com ou sem orçamento por trás),
+  usado pro badge verde/dourado (mesmas cores de status já usadas em Orçamentos) e pro
+  filtro Todas/Pagas/Não pagas na listagem, que reaproveita o mesmo padrão visual
+  `.filtros-status` já usado no filtro de status de Orçamentos
 
 ## Já construído e testado
 
@@ -443,6 +466,25 @@ pro WhatsApp.
     mostra valor/data, e validando a exclusão com estorno (via chamada autenticada
     simulando a confirmação, já que o `confirm()` nativo bloqueia automação de
     navegador) conferindo o estoque devolvido e o orçamento permanecendo ACEITO
+21. Controle de pagamento por venda (paga/pendente de recebimento) refletido na Receita:
+    migration marcou todas as vendas pré-existentes como já pagas (data de pagamento
+    igual à data da venda), vendas novas nascem não pagas. `PUT /vendas/:id` (mesmo
+    endpoint de editar) passou a aceitar `pago` opcional, preenchendo/limpando
+    `dataPagamento` automaticamente só quando o estado de fato muda. Destaque do mês
+    atual na Receita passou a mostrar `totalRecebido` (caixa de verdade) em vez do total
+    vendido bruto, com `totalAReceber` como informação secundária ao lado; histórico de
+    vendas ganhou badge verde/dourado (Pago/Não pago, mesmas cores de status de
+    Orçamentos), filtro Todas/Pagas/Não pagas, e um botão "Marcar como pago" de um toque
+    só em cada venda não paga, sem precisar abrir o formulário de edição completo.
+    Testado via script cobrindo criação de venda já nascendo não paga, marcar como paga
+    (dataPagamento preenchida), reenviar pago:true numa venda já paga (dataPagamento
+    preservada, não reseta), validação de tipo inválido em `pago`, cálculo de
+    totalVendido/totalRecebido/totalAReceber com uma mistura de vendas pagas e não pagas
+    no mesmo mês, e desmarcar uma venda paga (dataPagamento volta a `null`,
+    totalRecebido cai a zero); e depois no navegador, criando duas vendas no mesmo mês
+    (uma marcada como paga, outra deixada pendente), confirmando que o destaque atualiza
+    instantaneamente ao clicar em "Marcar como pago" (sem recarregar a página) e que os
+    filtros Pagas/Não pagas mostram exatamente o subconjunto esperado
 
 ## Pendente
 

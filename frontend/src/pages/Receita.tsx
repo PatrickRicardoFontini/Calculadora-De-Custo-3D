@@ -70,6 +70,8 @@ export function Receita() {
   const [salvandoVenda, setSalvandoVenda] = useState(false);
   const [erroVendaForm, setErroVendaForm] = useState<string | null>(null);
 
+  const [filtroPago, setFiltroPago] = useState<"todas" | "pagas" | "naoPagas">("todas");
+
   const [editandoVendaId, setEditandoVendaId] = useState<string | null>(null);
   const [valorEditado, setValorEditado] = useState("");
   const [dataEditada, setDataEditada] = useState("");
@@ -253,6 +255,27 @@ export function Receita() {
     }
   }
 
+  // Atalho de um toque só pra marcar uma venda como paga, sem abrir o formulário de
+  // edição inteiro — reenvia os dados atuais da venda (valorFinal/dataVenda, e descrição
+  // só se for venda direta) junto com pago: true, já que o PUT exige valorFinal/dataVenda
+  async function marcarComoPaga(v: VendaDoMes) {
+    setProcessandoVendaId(v.id);
+    setErroVendas(null);
+    try {
+      await atualizarVenda(v.id, {
+        valorFinal: v.valorFinal,
+        dataVenda: v.dataVenda.slice(0, 10),
+        pago: true,
+        ...(v.orcamentoId ? {} : { descricao: v.descricao ?? "" }),
+      });
+      await Promise.all([carregarReceitaMensal(), carregarVendasDoMes()]);
+    } catch (err) {
+      setErroVendas((err as Error).message);
+    } finally {
+      setProcessandoVendaId(null);
+    }
+  }
+
   async function excluirVendaConfirmada(id: string) {
     if (
       !confirm(
@@ -276,13 +299,19 @@ export function Receita() {
   const chaveMesAtual = mesAtualChave();
   const mesAtual = dados.find((d) => d.mes === chaveMesAtual) ?? {
     mes: chaveMesAtual,
-    totalVendas: 0,
+    totalVendido: 0,
+    totalRecebido: 0,
+    totalAReceber: 0,
     quantidadeVendas: 0,
   };
   const mesesAnteriores = dados.filter((d) => d.mes !== chaveMesAtual);
 
   const opcoesMes = Array.from(new Set([chaveMesAtual, ...dados.map((d) => d.mes)])).sort((a, b) =>
     a < b ? 1 : -1
+  );
+
+  const vendasFiltradas = vendas.filter((v) =>
+    filtroPago === "todas" ? true : filtroPago === "pagas" ? v.pago : !v.pago
   );
 
   return (
@@ -297,10 +326,16 @@ export function Receita() {
         <>
           <div className="destaque-mes-atual">
             <span className="rotulo-destaque">{formatarMes(mesAtual.mes)}</span>
-            <span className="valor-destaque">R$ {mesAtual.totalVendas.toFixed(2)}</span>
+            <span className="valor-destaque">R$ {mesAtual.totalRecebido.toFixed(2)}</span>
             <span className="detalhe-secundario">
               <span className="numero">{mesAtual.quantidadeVendas}</span>{" "}
               {mesAtual.quantidadeVendas === 1 ? "venda" : "vendas"}
+              {mesAtual.totalAReceber > 0 && (
+                <>
+                  {" "}
+                  · a receber: <span className="numero">R$ {mesAtual.totalAReceber.toFixed(2)}</span>
+                </>
+              )}
             </span>
           </div>
 
@@ -321,7 +356,7 @@ export function Receita() {
                   {mesesAnteriores.map((m) => (
                     <tr key={m.mes}>
                       <td>{formatarMes(m.mes)}</td>
-                      <td className="numero">R$ {m.totalVendas.toFixed(2)}</td>
+                      <td className="numero">R$ {m.totalVendido.toFixed(2)}</td>
                       <td className="numero">{m.quantidadeVendas}</td>
                     </tr>
                   ))}
@@ -488,12 +523,27 @@ export function Receita() {
             </select>
           </div>
 
+          <div className="filtros-status">
+            {(["todas", "pagas", "naoPagas"] as const).map((opcao) => (
+              <button
+                key={opcao}
+                className={filtroPago === opcao ? "filtro-ativo" : ""}
+                onClick={() => setFiltroPago(opcao)}
+              >
+                {opcao === "todas" ? "Todas" : opcao === "pagas" ? "Pagas" : "Não pagas"}
+              </button>
+            ))}
+          </div>
+
           {erroVendas && <p className="erro">{erroVendas}</p>}
 
           {carregandoVendas ? (
             <p>Carregando vendas...</p>
-          ) : vendas.length === 0 ? (
-            <p>Nenhuma venda registrada em {formatarMes(mesSelecionado)}.</p>
+          ) : vendasFiltradas.length === 0 ? (
+            <p>
+              Nenhuma venda {filtroPago === "pagas" ? "paga" : filtroPago === "naoPagas" ? "não paga" : ""} registrada
+              em {formatarMes(mesSelecionado)}.
+            </p>
           ) : (
             <div className="tabela-scroll">
               <table className="tabela">
@@ -505,18 +555,19 @@ export function Receita() {
                     <th>Peso</th>
                     <th>Horas</th>
                     <th>Valor</th>
+                    <th>Pago</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {vendas.map((v) => {
+                  {vendasFiltradas.map((v) => {
                     const ehVendaDireta = !v.orcamentoId;
                     const processando = processandoVendaId === v.id;
 
                     if (editandoVendaId === v.id) {
                       return (
                         <tr key={v.id}>
-                          <td colSpan={7}>
+                          <td colSpan={8}>
                             <form
                               className="formulario"
                               onSubmit={(e) => {
@@ -654,6 +705,20 @@ export function Receita() {
                               {" "}
                               (calculado: <span className="numero">R$ {v.valorCalculado.toFixed(2)}</span>)
                             </span>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`badge-status ${v.pago ? "badge-aceito" : "badge-pendente"}`}>
+                            {v.pago ? "Pago" : "Não pago"}
+                          </span>
+                          {!v.pago && (
+                            <button
+                              className="link-acao"
+                              disabled={processando}
+                              onClick={() => marcarComoPaga(v)}
+                            >
+                              Marcar como pago
+                            </button>
                           )}
                         </td>
                         <td>

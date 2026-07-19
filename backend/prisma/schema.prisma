@@ -8,17 +8,17 @@ datasource db {
 }
 
 model Usuario {
-  id                 String      @id @default(uuid())
-  email              String      @unique
+  id                 String    @id @default(uuid())
+  email              String    @unique
   senhaHash          String
   nome               String
-  precoKwh           Decimal?    @db.Decimal(10, 4)
-  margemPadrao       Decimal?    @db.Decimal(5, 2)
-  margemExtrasPadrao Decimal?    @db.Decimal(5, 2)
-  templateWhatsapp   String?     @db.Text
+  precoKwh           Decimal?  @db.Decimal(10, 4)
+  margemPadrao       Decimal?  @db.Decimal(5, 2)
+  margemExtrasPadrao Decimal?  @db.Decimal(5, 2)
+  templateWhatsapp   String?   @db.Text
   resetTokenHash     String?
   resetTokenExpira   DateTime?
-  criadoEm           DateTime    @default(now())
+  criadoEm           DateTime  @default(now())
 
   clientes   Cliente[]
   filamentos Filamento[]
@@ -30,27 +30,27 @@ model Usuario {
 }
 
 model Maquina {
-  id             String      @id @default(uuid())
-  usuarioId      String
-  usuario        Usuario     @relation(fields: [usuarioId], references: [id])
-  nome           String
-  potenciaWatts  Decimal     @db.Decimal(10, 2)
-  precoCompra    Decimal     @db.Decimal(10, 2)
-  vidaUtilHoras  Decimal     @db.Decimal(10, 2)
-  criadoEm       DateTime    @default(now())
+  id            String   @id @default(uuid())
+  usuarioId     String
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
+  nome          String
+  potenciaWatts Decimal  @db.Decimal(10, 2)
+  precoCompra   Decimal  @db.Decimal(10, 2)
+  vidaUtilHoras Decimal  @db.Decimal(10, 2)
+  criadoEm      DateTime @default(now())
 
-  orcamentos     Orcamento[]
+  orcamentos Orcamento[]
 
   @@map("maquinas")
 }
 
 model Cliente {
-  id         String      @id @default(uuid())
-  usuarioId  String
-  usuario    Usuario     @relation(fields: [usuarioId], references: [id])
-  nome       String
-  whatsapp   String?
-  criadoEm   DateTime    @default(now())
+  id        String   @id @default(uuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  nome      String
+  whatsapp  String?
+  criadoEm  DateTime @default(now())
 
   orcamentos Orcamento[]
   vendas     Venda[]
@@ -59,22 +59,22 @@ model Cliente {
 }
 
 model Filamento {
-  id             String             @id @default(uuid())
+  id             String   @id @default(uuid())
   usuarioId      String
-  usuario        Usuario            @relation(fields: [usuarioId], references: [id])
+  usuario        Usuario  @relation(fields: [usuarioId], references: [id])
   tipo           String
   cor            String
   corHex         String?
   marca          String?
-  pesoTotalG     Decimal            @db.Decimal(10, 2)
-  pesoAtualG     Decimal            @db.Decimal(10, 2)
-  estoqueMinimoG Decimal            @db.Decimal(10, 2)
-  precoPorGrama  Decimal?           @db.Decimal(10, 4)
-  criadoEm       DateTime           @default(now())
+  pesoTotalG     Decimal  @db.Decimal(10, 2)
+  pesoAtualG     Decimal  @db.Decimal(10, 2)
+  estoqueMinimoG Decimal  @db.Decimal(10, 2)
+  precoPorGrama  Decimal? @db.Decimal(10, 4)
+  criadoEm       DateTime @default(now())
 
-  orcamentos     Orcamento[]
-  movimentos     MovimentoEstoque[]
-  coresExtras    OrcamentoFilamentoExtra[]
+  orcamentos  Orcamento[]
+  movimentos  MovimentoEstoque[]
+  coresExtras OrcamentoFilamentoExtra[]
 
   @@map("filamentos")
 }
@@ -86,28 +86,28 @@ enum StatusOrcamento {
 }
 
 model Orcamento {
-  id             String               @id @default(uuid())
+  id             String          @id @default(uuid())
   usuarioId      String
-  usuario        Usuario              @relation(fields: [usuarioId], references: [id])
+  usuario        Usuario         @relation(fields: [usuarioId], references: [id])
   clienteId      String
-  cliente        Cliente              @relation(fields: [clienteId], references: [id])
+  cliente        Cliente         @relation(fields: [clienteId], references: [id])
   filamentoId    String
-  filamento      Filamento            @relation(fields: [filamentoId], references: [id])
+  filamento      Filamento       @relation(fields: [filamentoId], references: [id])
   maquinaId      String?
-  maquina        Maquina?             @relation(fields: [maquinaId], references: [id], onDelete: SetNull)
+  maquina        Maquina?        @relation(fields: [maquinaId], references: [id], onDelete: SetNull)
   nome           String?
-  pesoUsadoG     Decimal              @db.Decimal(10, 2)
-  horasImpressao Decimal              @db.Decimal(10, 2)
-  valorCalculado Decimal              @db.Decimal(10, 2)
-  valorAtual     Decimal              @db.Decimal(10, 2)
-  margemExtras   Decimal?             @db.Decimal(5, 2)
-  status         StatusOrcamento      @default(PENDENTE)
-  criadoEm       DateTime             @default(now())
+  pesoUsadoG     Decimal         @db.Decimal(10, 2)
+  horasImpressao Decimal         @db.Decimal(10, 2)
+  valorCalculado Decimal         @db.Decimal(10, 2)
+  valorAtual     Decimal         @db.Decimal(10, 2)
+  margemExtras   Decimal?        @db.Decimal(5, 2)
+  status         StatusOrcamento @default(PENDENTE)
+  criadoEm       DateTime        @default(now())
 
-  historico      OrcamentoHistorico[]
-  extras         OrcamentoExtra[]
-  coresExtras    OrcamentoFilamentoExtra[]
-  venda          Venda?
+  historico   OrcamentoHistorico[]
+  extras      OrcamentoExtra[]
+  coresExtras OrcamentoFilamentoExtra[]
+  venda       Venda?
 
   @@map("orcamentos")
 }
@@ -152,18 +152,20 @@ model OrcamentoHistorico {
 // já que com orçamento o material já descreve o que foi vendido) substituem os dados que
 // viriam do Orcamento vinculado.
 model Venda {
-  id          String             @id @default(uuid())
-  usuarioId   String
-  usuario     Usuario            @relation(fields: [usuarioId], references: [id])
-  orcamentoId String?            @unique
-  orcamento   Orcamento?         @relation(fields: [orcamentoId], references: [id])
-  clienteId   String?
-  cliente     Cliente?           @relation(fields: [clienteId], references: [id])
-  descricao   String?
-  valorFinal  Decimal            @db.Decimal(10, 2)
-  dataVenda   DateTime           @default(now())
+  id            String     @id @default(uuid())
+  usuarioId     String
+  usuario       Usuario    @relation(fields: [usuarioId], references: [id])
+  orcamentoId   String?    @unique
+  orcamento     Orcamento? @relation(fields: [orcamentoId], references: [id])
+  clienteId     String?
+  cliente       Cliente?   @relation(fields: [clienteId], references: [id])
+  descricao     String?
+  valorFinal    Decimal    @db.Decimal(10, 2)
+  dataVenda     DateTime   @default(now())
+  pago          Boolean    @default(false)
+  dataPagamento DateTime?
 
-  movimentos  MovimentoEstoque[]
+  movimentos MovimentoEstoque[]
 
   @@map("vendas")
 }

@@ -199,7 +199,9 @@ export interface MovimentoEstoque {
 
 export interface ReceitaMensal {
   mes: string;
-  totalVendas: number;
+  totalVendido: number;
+  totalRecebido: number;
+  totalAReceber: number;
   quantidadeVendas: number;
 }
 
@@ -212,6 +214,7 @@ export interface VendaDoMes {
   orcamentoId: string | null;
   clienteId: string | null;
   dataVenda: string;
+  pago: boolean;
   clienteNome: string | null;
   descricao: string | null;
   filamentoTipo: string | null;
@@ -235,7 +238,9 @@ export interface NovaVenda {
 }
 
 // valorFinal/dataVenda sempre obrigatórios; descricao/cliente só são aceitos pelo backend
-// quando a venda é direta (sem orçamento) — omitir os dois em venda de orçamento
+// quando a venda é direta (sem orçamento) — omitir os dois em venda de orçamento. pago é
+// opcional — omitir mantém o valor atual, usado tanto na edição completa quanto no atalho
+// de "marcar como pago" de um toque só
 export interface EdicaoVenda {
   valorFinal: number;
   dataVenda: string;
@@ -243,6 +248,7 @@ export interface EdicaoVenda {
   clienteId?: string;
   clienteNome?: string;
   clienteWhatsapp?: string;
+  pago?: boolean;
 }
 
 export interface VendaComEstoque {
